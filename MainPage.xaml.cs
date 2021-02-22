@@ -29,7 +29,10 @@ namespace CryptoDashboard {
         }
 
         // Unlock the rest of the application when the user submits a valid API key
-        private void UnlockContent(object sender, RoutedEventArgs e) {
+        private void UnlockContent_Click(object sender, RoutedEventArgs e) {
+            // Disable button
+            UnlockButton.IsEnabled = false;
+
             // Get key from UI
             string key = APIKeyInput.Text;
 
@@ -40,19 +43,23 @@ namespace CryptoDashboard {
             } else {
                 // User submitted empty key
                 new MessageDialog("Empty submission. Try again.").ShowAsync();
+
+                // Enable button
+                UnlockButton.IsEnabled = true;
             }
         }
 
         // Request a response from the Nomic API
-        private async void request(string key) {
+        private async void request(string key, int page=1, int per_page=1) {
             // Create an HTTP client object
             HttpClient client = new HttpClient();
 
-            // Add a user-agent header to the GET request. 
-            var headers = client.DefaultRequestHeaders;
-
             // Nomic endpoint
-            Uri uri = new Uri("https://api.nomics.com/v1/currencies/ticker?id=BTC&per-page=1&key=" + key);
+            Uri uri = new Uri(
+                "https://api.nomics.com/v1/currencies/ticker?convert=CAD&status=active&sort=rank&key=" + key +
+                "&page=" + page + 
+                "&per-page=" + per_page
+            );
 
             // Object that will receive data asynchronously
             HttpResponseMessage response;
@@ -68,6 +75,9 @@ namespace CryptoDashboard {
                 // Read data
                 json = await response.Content.ReadAsStringAsync();
 
+                // Debug results
+                Debug.WriteLine(json);
+
                 // Set API key for use later
                 APIKey = key;
 
@@ -77,6 +87,9 @@ namespace CryptoDashboard {
                 // Inform user they've input an invalid key
                 new MessageDialog("Invalid API key").ShowAsync();
             }
+
+            // Enable unlock button
+            UnlockButton.IsEnabled = true;
         }
 
         // Unlock the application, hiding the lock screen and showing the dashboard

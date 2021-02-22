@@ -104,13 +104,13 @@
                             <TextBlock HorizontalAlignment="Center" Margin="15">Locked content, enter API key to unlock.</TextBlock>
                             <RelativePanel HorizontalAlignment="Center">
                                 <TextBox x:Name="APIKeyInput" Width="200px" PlaceholderText="Enter API key here" />
-                                <Button x:Name="UnlockButton" Content="Unlock" Margin="15,0,0,0" RelativePanel.RightOf="APIKeyInput" Click="UnlockContent" />
+                                <Button x:Name="UnlockButton" Content="Unlock" Margin="15,0,0,0" RelativePanel.RightOf="APIKeyInput" Click="UnlockContent_Click" />
                             </RelativePanel>
                         </StackPanel>
                     </Page>
 
                     <Page Name="Dashboard" Visibility="Collapsed">
-                        <TextBlock>this should NOT be visiable</TextBlock>
+                        <TextBlock>this should NOT be visiable until unlocked</TextBlock>
                     </Page>
                 </Grid>
             </SplitView.Content>

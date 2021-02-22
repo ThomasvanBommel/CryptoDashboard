@@ -109,8 +109,20 @@
                         </StackPanel>
                     </Page>
 
+                    <!-- Dashboard -->
                     <Page Name="Dashboard" Visibility="Collapsed">
-                        <TextBlock>this should NOT be visiable until unlocked</TextBlock>
+                        <ScrollViewer>
+                            <StackPanel Name="DashboardContent">
+                                <!-- Currencies -->
+                                <StackPanel Name="Currencies" />
+                                
+                                <!-- Navigation buttons -->
+                                <RelativePanel HorizontalAlignment="Center" Margin="10">
+                                    <Button Name="PrevPageBtn" Content="Previous" Margin="0,0,10,0" Click="PrevPage_Click" />
+                                    <Button Name="NextPageBtn" Content="Next" RelativePanel.RightOf="PrevPageBtn" Click="NextPage_Click" />
+                                </RelativePanel>
+                            </StackPanel>
+                        </ScrollViewer>
                     </Page>
                 </Grid>
             </SplitView.Content>

@@ -15,10 +15,13 @@ using Windows.UI.Xaml.Navigation;
 using Windows.Web.Http;
 using Windows.UI.Popups;
 using System.Diagnostics;
+using Newtonsoft.Json;
+using Windows.UI.Xaml.Media.Imaging;
 
 namespace CryptoDashboard {
     public sealed partial class MainPage : Page {
         string APIKey;
+        int dashboardPage = 1;
 
         public MainPage() {
             this.InitializeComponent();
@@ -50,7 +53,7 @@ namespace CryptoDashboard {
         }
 
         // Request a response from the Nomic API
-        private async void request(string key, int page=1, int per_page=1) {
+        private async void request(string key, int page=1, int per_page=20) {
             // Create an HTTP client object
             HttpClient client = new HttpClient();
 
@@ -78,6 +81,9 @@ namespace CryptoDashboard {
                 // Debug results
                 Debug.WriteLine(json);
 
+                // Deserialize json and update the dashboard
+                UpdateDashboard(deserialize(json));
+
                 // Set API key for use later
                 APIKey = key;
 
@@ -87,6 +93,9 @@ namespace CryptoDashboard {
                 // Inform user they've input an invalid key
                 new MessageDialog("Invalid API key").ShowAsync();
             }
+
+            // Updated dashboard page number
+            dashboardPage = page;
 
             // Enable unlock button
             UnlockButton.IsEnabled = true;
@@ -121,6 +130,65 @@ namespace CryptoDashboard {
             LockBtn.Visibility = Visibility.Collapsed;
         }
 
+        // Deserialize JSON to Currency[] object
+        private List<Currency> deserialize(string json) {
+            return JsonConvert.DeserializeObject<List<Currency>>(json);
+        }
+
+        private void UpdateDashboard(List<Currency> currencies) {
+            Currencies.Children.Clear();
+
+            foreach(Currency currency in currencies) {
+                Currencies.Children.Add(CreateElement(currency));
+            }
+        }
+
+        private RelativePanel CreateElement(Currency currency) {
+            RelativePanel panel = new RelativePanel();
+            panel.Margin = new Thickness(10);
+
+            // Check image source type
+            ImageSource source;
+            if (currency.logo_url.Substring(currency.logo_url.Length - 3) == "svg") {
+                source = new SvgImageSource(new Uri(currency.logo_url));
+            } else {
+                source = new BitmapImage(new Uri(currency.logo_url));
+            }
+
+            // Logo
+            Image logo = new Image();
+            logo.Source = source;
+            logo.Width = 64;
+            logo.Height = 64;
+            logo.Margin = new Thickness(0, 0, 10, 0);
+
+            // Name / title
+            TextBlock name = new TextBlock();
+            name.Text = currency.name + " (" + currency.symbol + ")";
+            RelativePanel.SetRightOf(name, logo);
+
+            // Rank
+            TextBlock rank = new TextBlock();
+            rank.Text = "Rank #" + currency.rank;
+            RelativePanel.SetBelow(rank, name);
+            RelativePanel.SetRightOf(rank, logo);
+
+            // Rank
+            TextBlock price = new TextBlock();
+            price.Text = "$" + currency.price;
+            RelativePanel.SetBelow(price, rank);
+            RelativePanel.SetRightOf(price, logo);
+
+            // Add elements to the panel
+            panel.Children.Add(logo);
+            panel.Children.Add(name);
+            panel.Children.Add(rank);
+            panel.Children.Add(price);
+
+            // Return element
+            return panel;
+        }
+
         private void DashboardChanged(object sender, SelectionChangedEventArgs e) {
 
         }
@@ -129,6 +197,16 @@ namespace CryptoDashboard {
         private void LockBtn_Click(object sender, RoutedEventArgs e) {
             // Lock the application
             LockApplication();
+        }
+
+        private void NextPage_Click(object sender, RoutedEventArgs e) {
+            request(APIKey, ++dashboardPage);
+        }
+
+        private void PrevPage_Click(object sender, RoutedEventArgs e) {
+            if (dashboardPage > 1) {
+                request(APIKey, --dashboardPage);
+            }
         }
     }
 }

@@ -14,18 +14,13 @@ using Windows.UI.Xaml.Media;
 using Windows.UI.Xaml.Navigation;
 using Windows.Web.Http;
 using Windows.UI.Popups;
+using System.Diagnostics;
 
-// The Blank Page item template is documented at https://go.microsoft.com/fwlink/?LinkId=402352&clcid=0x409
+namespace CryptoDashboard {
+    public sealed partial class MainPage : Page {
+        string APIKey;
 
-namespace CryptoDashboard
-{
-    /// <summary>
-    /// An empty page that can be used on its own or navigated to within a Frame.
-    /// </summary>
-    public sealed partial class MainPage : Page
-    {
-        public MainPage()
-        {
+        public MainPage() {
             this.InitializeComponent();
         }
 
@@ -33,14 +28,10 @@ namespace CryptoDashboard
             MySplitView.IsPaneOpen = !MySplitView.IsPaneOpen;
         }
 
-        private void HamburgerMenu_SelectionChanged(object sender, SelectionChangedEventArgs e) {
-
-        }
-
         // Unlock the rest of the application when the user submits a valid API key
         private void UnlockContent(object sender, RoutedEventArgs e) {
             // Get key from UI
-            string key = APIKey.Text;
+            string key = APIKeyInput.Text;
 
             // Check if key is empty
             if (key != "") {
@@ -76,9 +67,55 @@ namespace CryptoDashboard
 
                 // Read data
                 json = await response.Content.ReadAsStringAsync();
+
+                // Set API key for use later
+                APIKey = key;
+
+                // Unlock the application
+                UnlockApplication();
             } catch {
+                // Inform user they've input an invalid key
                 new MessageDialog("Invalid API key").ShowAsync();
             }
+        }
+
+        // Unlock the application, hiding the lock screen and showing the dashboard
+        private void UnlockApplication() {
+            // Hide the lock screen
+            UnlockPage.Visibility = Visibility.Collapsed;
+            LockedMenu.Visibility = Visibility.Collapsed;
+
+            // Make the dashboard visible
+            Dashboard.Visibility = Visibility.Visible;
+            DashboardMenu.Visibility = Visibility.Visible;
+
+            // Show "logout" button
+            LockBtn.Visibility = Visibility.Visible;
+        }
+
+        // Lock the application, hiding the dashboard and showing the lock screen
+        private void LockApplication() {
+            // Hide dashboard
+            Dashboard.Visibility = Visibility.Collapsed;
+            DashboardMenu.Visibility = Visibility.Collapsed;
+
+            // Show lock screen
+            APIKeyInput.Text = "";
+            UnlockPage.Visibility = Visibility.Visible;
+            LockedMenu.Visibility = Visibility.Visible;
+
+            // Hide "logout" button
+            LockBtn.Visibility = Visibility.Collapsed;
+        }
+
+        private void DashboardChanged(object sender, SelectionChangedEventArgs e) {
+
+        }
+
+        // User clicked the "lock application" button
+        private void LockBtn_Click(object sender, RoutedEventArgs e) {
+            // Lock the application
+            LockApplication();
         }
     }
 }

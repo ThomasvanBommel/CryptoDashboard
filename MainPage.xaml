@@ -43,53 +43,57 @@
             <TextBlock Name="Title" Foreground="White" Grid.Column="1" Padding="10" />
             <TextBlock HorizontalAlignment="Stretch" Grid.Column="2" />
             
-            <!-- Save icon (top right)
-            <Button Name="SaveBtn" FontFamily="{ StaticResource IconFontFamily }" Background="Transparent" Grid.Column="3" FontSize="{ StaticResource NavFontSize }" Width="{ StaticResource NavCloseWidth }"  Margin="{ StaticResource IconMargin }" Content="&#xE74E;">
+            <!-- Lock icon (top right) -->
+            <Button Name="LockBtn" Click="LockBtn_Click" Visibility="Collapsed" Foreground="White" FontFamily="{ StaticResource IconFontFamily }" Background="Transparent" Grid.Column="3" FontSize="{ StaticResource NavFontSize }" Width="{ StaticResource NavCloseWidth }"  Margin="{ StaticResource IconMargin }" Content="&#xE72E;">
                 <Button.Resources>
                     <SolidColorBrush x:Key="ButtonBackgroundPointerOver" Color="Transparent" />
-                    <SolidColorBrush x:Key="ButtonForegroundPointerOver" Color="Gray" />
+                    <SolidColorBrush x:Key="ButtonForegroundPointerOver" Color="Black" />
+                    <SolidColorBrush x:Key="ButtonBorderBrushPointerOver" Color="Transparent" />
+                    <SolidColorBrush x:Key="ButtonBorderBrushPressed" Color="Transparent" />
                 </Button.Resources>
             </Button>
-            -->
         </Grid>
 
         <!-- Hamburger menu + main content -->
         <SplitView Name="MySplitView" Grid.Row="1" DisplayMode="CompactOverlay" OpenPaneLength="{ StaticResource NavOpenWidth }" CompactPaneLength="{ StaticResource NavCloseWidth }" HorizontalAlignment="Stretch">
             <!-- Hamburger menu -->
             <SplitView.Pane>
-                <ListBox SelectionMode="Multiple" Name="HamburgerMenu" SelectionChanged="HamburgerMenu_SelectionChanged">
+                <Grid>
+                    <!-- Locked menu -->
+                    <ListBox Name="LockedMenu">
+                        <ListBoxItem Name="Unlock" IsSelected="True">
+                            <StackPanel Orientation="Horizontal">
+                                <TextBlock FontFamily="{ StaticResource IconFontFamily }" FontSize="{ StaticResource NavFontSize }" Width="{ StaticResource NavCloseWidth }"  Margin="{ StaticResource IconMargin }" TextAlignment="Center" Text="&#xE72E;" />
+                                <TextBlock Text="Explorer" FontSize="{ StaticResource NavFontSize }" Margin="{ StaticResource HamburgerOptionMargin }" />
+                            </StackPanel>
+                        </ListBoxItem>
+                    </ListBox>
 
-                    <ListBoxItem Name="Unlock" IsSelected="True">
-                        <StackPanel Orientation="Horizontal">
-                            <TextBlock FontFamily="{ StaticResource IconFontFamily }" FontSize="{ StaticResource NavFontSize }" Width="{ StaticResource NavCloseWidth }"  Margin="{ StaticResource IconMargin }" TextAlignment="Center" Text="&#xE72E;" />
-                            <TextBlock Text="Explorer" FontSize="{ StaticResource NavFontSize }" Margin="{ StaticResource HamburgerOptionMargin }" />
-                        </StackPanel>
-                    </ListBoxItem>
+                    <!-- Unlocked menu -->
+                    <ListBox Name="DashboardMenu" Visibility="Collapsed" SelectionChanged="DashboardChanged">
+                        <ListBoxItem Name="OpenFile">
+                            <StackPanel Orientation="Horizontal">
+                                <TextBlock FontFamily="{ StaticResource IconFontFamily }" FontSize="{ StaticResource NavFontSize }" Width="{ StaticResource NavCloseWidth }" Text="&#xE8E5;" TextAlignment="Center" Margin="{ StaticResource IconMargin }" />
+                                <TextBlock Text="Open File" FontSize="{ StaticResource NavFontSize }" Margin="{ StaticResource HamburgerOptionMargin }" />
+                            </StackPanel>
+                        </ListBoxItem>
 
-                    <!-- Menu items not used
-                    <ListBoxItem Name="OpenFile">
-                        <StackPanel Orientation="Horizontal">
-                            <TextBlock FontFamily="{ StaticResource IconFontFamily }" FontSize="{ StaticResource NavFontSize }" Width="{ StaticResource NavCloseWidth }" Text="&#xE8E5;" TextAlignment="Center" Margin="{ StaticResource IconMargin }" />
-                            <TextBlock Text="Open File" FontSize="{ StaticResource NavFontSize }" Margin="{ StaticResource HamburgerOptionMargin }" />
-                        </StackPanel>
-                    </ListBoxItem>
+                        <ListBoxItem Name="OpenDir">
+                            <StackPanel Orientation="Horizontal">
+                                <TextBlock FontFamily="{ StaticResource IconFontFamily }" FontSize="{ StaticResource NavFontSize }" Width="{ StaticResource NavCloseWidth }" Text="&#xE8DA;" TextAlignment="Center" Margin="{ StaticResource IconMargin }" />
+                                <TextBlock Text="Open Directory" FontSize="{ StaticResource NavFontSize }" Margin="{ StaticResource HamburgerOptionMargin }" />
+                            </StackPanel>
+                        </ListBoxItem>
 
-                    <ListBoxItem Name="OpenDir">
-                        <StackPanel Orientation="Horizontal">
-                            <TextBlock FontFamily="{ StaticResource IconFontFamily }" FontSize="{ StaticResource NavFontSize }" Width="{ StaticResource NavCloseWidth }" Text="&#xE8DA;" TextAlignment="Center" Margin="{ StaticResource IconMargin }" />
-                            <TextBlock Text="Open Directory" FontSize="{ StaticResource NavFontSize }" Margin="{ StaticResource HamburgerOptionMargin }" />
-                        </StackPanel>
-                    </ListBoxItem>
-
-                    <ListBoxItem Name="Author">
-                        <StackPanel Orientation="Horizontal">
-                            <TextBlock FontFamily="{ StaticResource IconFontFamily }" FontSize="{ StaticResource NavFontSize }" Width="{ StaticResource NavCloseWidth }" Text="&#xE779;" TextAlignment="Center" Margin="{ StaticResource IconMargin }" />
-                            <TextBlock Text="View Author Details" FontSize="{ StaticResource NavFontSize }" Margin="{ StaticResource HamburgerOptionMargin }" />
-                        </StackPanel>
-                    </ListBoxItem>
-                    -->
-
-                </ListBox>
+                        <ListBoxItem Name="Author">
+                            <StackPanel Orientation="Horizontal">
+                                <TextBlock FontFamily="{ StaticResource IconFontFamily }" FontSize="{ StaticResource NavFontSize }" Width="{ StaticResource NavCloseWidth }" Text="&#xE779;" TextAlignment="Center" Margin="{ StaticResource IconMargin }" />
+                                <TextBlock Text="View Author Details" FontSize="{ StaticResource NavFontSize }" Margin="{ StaticResource HamburgerOptionMargin }" />
+                            </StackPanel>
+                        </ListBoxItem>
+                    </ListBox>
+                </Grid>
+                
             </SplitView.Pane>
 
             <!-- Main content -->
@@ -99,13 +103,13 @@
                         <StackPanel>
                             <TextBlock HorizontalAlignment="Center" Margin="15">Locked content, enter API key to unlock.</TextBlock>
                             <RelativePanel HorizontalAlignment="Center">
-                                <TextBox x:Name="APIKey" Width="200px" PlaceholderText="Enter API key here" />
-                                <Button x:Name="UnlockButton" Content="Unlock" Margin="15,0,0,0" RelativePanel.RightOf="APIKey" Click="UnlockContent" />
+                                <TextBox x:Name="APIKeyInput" Width="200px" PlaceholderText="Enter API key here" />
+                                <Button x:Name="UnlockButton" Content="Unlock" Margin="15,0,0,0" RelativePanel.RightOf="APIKeyInput" Click="UnlockContent" />
                             </RelativePanel>
                         </StackPanel>
                     </Page>
 
-                    <Page Visibility="Collapsed">
+                    <Page Name="Dashboard" Visibility="Collapsed">
                         <TextBlock>this should NOT be visiable</TextBlock>
                     </Page>
                 </Grid>

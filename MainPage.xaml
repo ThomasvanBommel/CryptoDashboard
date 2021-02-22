@@ -59,9 +59,9 @@
             <SplitView.Pane>
                 <ListBox SelectionMode="Multiple" Name="HamburgerMenu" SelectionChanged="HamburgerMenu_SelectionChanged">
 
-                    <ListBoxItem Name="Explorer" IsSelected="True">
+                    <ListBoxItem Name="Unlock" IsSelected="True">
                         <StackPanel Orientation="Horizontal">
-                            <TextBlock FontFamily="{ StaticResource IconFontFamily }" FontSize="{ StaticResource NavFontSize }" Width="{ StaticResource NavCloseWidth }"  Margin="{ StaticResource IconMargin }" TextAlignment="Center" Text="&#xE71E;" />
+                            <TextBlock FontFamily="{ StaticResource IconFontFamily }" FontSize="{ StaticResource NavFontSize }" Width="{ StaticResource NavCloseWidth }"  Margin="{ StaticResource IconMargin }" TextAlignment="Center" Text="&#xE72E;" />
                             <TextBlock Text="Explorer" FontSize="{ StaticResource NavFontSize }" Margin="{ StaticResource HamburgerOptionMargin }" />
                         </StackPanel>
                     </ListBoxItem>
@@ -95,7 +95,19 @@
             <!-- Main content -->
             <SplitView.Content>
                 <Grid>
+                    <Page Name="UnlockPage">
+                        <StackPanel>
+                            <TextBlock HorizontalAlignment="Center" Margin="15">Locked content, enter API key to unlock.</TextBlock>
+                            <RelativePanel HorizontalAlignment="Center">
+                                <TextBox x:Name="APIKey" Width="200px" PlaceholderText="Enter API key here" />
+                                <Button x:Name="UnlockButton" Content="Unlock" Margin="15,0,0,0" RelativePanel.RightOf="APIKey" Click="UnlockContent" />
+                            </RelativePanel>
+                        </StackPanel>
+                    </Page>
 
+                    <Page Visibility="Collapsed">
+                        <TextBlock>this should NOT be visiable</TextBlock>
+                    </Page>
                 </Grid>
             </SplitView.Content>
         </SplitView>

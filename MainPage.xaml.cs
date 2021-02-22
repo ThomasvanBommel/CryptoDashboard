@@ -34,5 +34,12 @@ namespace CryptoDashboard
         private void HamburgerMenu_SelectionChanged(object sender, SelectionChangedEventArgs e) {
 
         }
+
+        // Unlock the rest of the application when the user submits a valid API key
+        private void UnlockContent(object sender, RoutedEventArgs e) {
+            string key = APIKey.Text;
+
+
+        }
     }
 }

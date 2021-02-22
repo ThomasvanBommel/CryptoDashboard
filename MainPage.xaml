@@ -1,0 +1,103 @@
+﻿<Page
+    x:Class="CryptoDashboard.MainPage"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:local="using:CryptoDashboard"
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    mc:Ignorable="d"
+    Background="{ThemeResource ApplicationPageBackgroundThemeBrush}">
+
+    <Page.Resources>
+        <!-- Hamburger menu resources -->
+        <x:Double x:Key="NavFontSize">16</x:Double>
+        <x:String x:Key="IconFontFamily">Segoe MDL2 Assets</x:String>
+        <x:String x:Key="EditorBackgroundColor">White</x:String>
+
+        <x:Double x:Key="NavCloseWidth">50</x:Double>
+        <x:Double x:Key="NavOpenWidth">240</x:Double>
+
+        <Thickness x:Key="IconMargin" Left="-12" Top="3"></Thickness>
+        <Thickness x:Key="BtnMargin" Left="-24" Top="3"></Thickness>
+        <Thickness x:Key="HamburgerOptionMargin" Left="{ StaticResource NavFontSize }"></Thickness>
+        <Thickness x:Key="TitleMargin" Left="{ StaticResource NavCloseWidth }"></Thickness>
+    </Page.Resources>
+    
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+        </Grid.RowDefinitions>
+
+        <!-- Title bar (Next to and including the hamburger button) -->
+        <Grid Background="#f50">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="Auto" />
+                <ColumnDefinition Width="Auto" />
+                <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="Auto" />
+            </Grid.ColumnDefinitions>
+            
+            <!-- Hamburger button + title bar -->
+            <Button Name="HamburgerButton" Grid.Column="0" Width="{ StaticResource NavCloseWidth }" Padding="0, 10" Foreground="White" FontFamily="{ StaticResource IconFontFamily }" FontSize="{ StaticResource NavFontSize }" Content="&#xE700;" Click="HamburgerButton_Click" />
+            <TextBlock Name="Title" Foreground="White" Grid.Column="1" Padding="10" />
+            <TextBlock HorizontalAlignment="Stretch" Grid.Column="2" />
+            
+            <!-- Save icon (top right)
+            <Button Name="SaveBtn" FontFamily="{ StaticResource IconFontFamily }" Background="Transparent" Grid.Column="3" FontSize="{ StaticResource NavFontSize }" Width="{ StaticResource NavCloseWidth }"  Margin="{ StaticResource IconMargin }" Content="&#xE74E;">
+                <Button.Resources>
+                    <SolidColorBrush x:Key="ButtonBackgroundPointerOver" Color="Transparent" />
+                    <SolidColorBrush x:Key="ButtonForegroundPointerOver" Color="Gray" />
+                </Button.Resources>
+            </Button>
+            -->
+        </Grid>
+
+        <!-- Hamburger menu + main content -->
+        <SplitView Name="MySplitView" Grid.Row="1" DisplayMode="CompactOverlay" OpenPaneLength="{ StaticResource NavOpenWidth }" CompactPaneLength="{ StaticResource NavCloseWidth }" HorizontalAlignment="Stretch">
+            <!-- Hamburger menu -->
+            <SplitView.Pane>
+                <ListBox SelectionMode="Multiple" Name="HamburgerMenu" SelectionChanged="HamburgerMenu_SelectionChanged">
+
+                    <ListBoxItem Name="Explorer" IsSelected="True">
+                        <StackPanel Orientation="Horizontal">
+                            <TextBlock FontFamily="{ StaticResource IconFontFamily }" FontSize="{ StaticResource NavFontSize }" Width="{ StaticResource NavCloseWidth }"  Margin="{ StaticResource IconMargin }" TextAlignment="Center" Text="&#xE71E;" />
+                            <TextBlock Text="Explorer" FontSize="{ StaticResource NavFontSize }" Margin="{ StaticResource HamburgerOptionMargin }" />
+                        </StackPanel>
+                    </ListBoxItem>
+
+                    <!-- Menu items not used
+                    <ListBoxItem Name="OpenFile">
+                        <StackPanel Orientation="Horizontal">
+                            <TextBlock FontFamily="{ StaticResource IconFontFamily }" FontSize="{ StaticResource NavFontSize }" Width="{ StaticResource NavCloseWidth }" Text="&#xE8E5;" TextAlignment="Center" Margin="{ StaticResource IconMargin }" />
+                            <TextBlock Text="Open File" FontSize="{ StaticResource NavFontSize }" Margin="{ StaticResource HamburgerOptionMargin }" />
+                        </StackPanel>
+                    </ListBoxItem>
+
+                    <ListBoxItem Name="OpenDir">
+                        <StackPanel Orientation="Horizontal">
+                            <TextBlock FontFamily="{ StaticResource IconFontFamily }" FontSize="{ StaticResource NavFontSize }" Width="{ StaticResource NavCloseWidth }" Text="&#xE8DA;" TextAlignment="Center" Margin="{ StaticResource IconMargin }" />
+                            <TextBlock Text="Open Directory" FontSize="{ StaticResource NavFontSize }" Margin="{ StaticResource HamburgerOptionMargin }" />
+                        </StackPanel>
+                    </ListBoxItem>
+
+                    <ListBoxItem Name="Author">
+                        <StackPanel Orientation="Horizontal">
+                            <TextBlock FontFamily="{ StaticResource IconFontFamily }" FontSize="{ StaticResource NavFontSize }" Width="{ StaticResource NavCloseWidth }" Text="&#xE779;" TextAlignment="Center" Margin="{ StaticResource IconMargin }" />
+                            <TextBlock Text="View Author Details" FontSize="{ StaticResource NavFontSize }" Margin="{ StaticResource HamburgerOptionMargin }" />
+                        </StackPanel>
+                    </ListBoxItem>
+                    -->
+
+                </ListBox>
+            </SplitView.Pane>
+
+            <!-- Main content -->
+            <SplitView.Content>
+                <Grid>
+
+                </Grid>
+            </SplitView.Content>
+        </SplitView>
+    </Grid>
+</Page>

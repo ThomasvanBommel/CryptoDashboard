@@ -4,7 +4,7 @@ Crypto-currency dashboard for Windows using the universal windows platform and [
 
 ## Lockscreen
 
-User must have an API key to unlock the dashboard
+User must have an API key to unlock the dashboard:
 ![lockscreen.png](lockscreen.png "Lockscreen Image")
 
 ## Dashboard

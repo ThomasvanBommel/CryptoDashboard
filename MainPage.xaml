@@ -113,8 +113,35 @@
                     <Page Name="Dashboard" Visibility="Collapsed">
                         <ScrollViewer>
                             <StackPanel Name="DashboardContent">
+                                <!-- Top bar -->
+                                <Grid>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="*" />
+                                        <ColumnDefinition Width="*" />
+                                        <ColumnDefinition Width="*" />
+                                        <ColumnDefinition Width="*" />
+                                        <ColumnDefinition Width="*" />
+                                    </Grid.ColumnDefinitions>
+
+                                    <TextBlock Text="Currency" HorizontalAlignment="Center" Grid.Column="0" />
+                                    <TextBlock Text="1 Day"    HorizontalAlignment="Center" Grid.Column="1" />
+                                    <TextBlock Text="30 Day"   HorizontalAlignment="Center" Grid.Column="2" />
+                                    <TextBlock Text="365 Day"  HorizontalAlignment="Center" Grid.Column="3" />
+                                    <TextBlock Text="YTD"      HorizontalAlignment="Center" Grid.Column="4" />
+                                </Grid>
+                                
+                                
                                 <!-- Currencies -->
-                                <StackPanel Name="Currencies" />
+                                <Grid x:Name="DashboardGrid">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="*" />
+                                        <ColumnDefinition Width="*" />
+                                        <ColumnDefinition Width="*" />
+                                        <ColumnDefinition Width="*" />
+                                        <ColumnDefinition Width="*" />
+                                    </Grid.ColumnDefinitions>
+                                </Grid>
+                                
                                 
                                 <!-- Navigation buttons -->
                                 <RelativePanel HorizontalAlignment="Center" Margin="10">

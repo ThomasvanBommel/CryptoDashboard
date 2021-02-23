@@ -17,6 +17,8 @@ using Windows.UI.Popups;
 using System.Diagnostics;
 using Newtonsoft.Json;
 using Windows.UI.Xaml.Media.Imaging;
+using Windows.UI;
+using Windows.UI.Text;
 
 namespace CryptoDashboard {
     public sealed partial class MainPage : Page {
@@ -67,6 +69,7 @@ namespace CryptoDashboard {
             // Object that will receive data asynchronously
             HttpResponseMessage response;
             string json;
+            List<Currency> list = new List<Currency>();
 
             try {
                 // Get response
@@ -78,21 +81,21 @@ namespace CryptoDashboard {
                 // Read data
                 json = await response.Content.ReadAsStringAsync();
 
-                // Debug results
-                Debug.WriteLine(json);
-
-                // Deserialize json and update the dashboard
-                UpdateDashboard(deserialize(json));
-
-                // Set API key for use later
-                APIKey = key;
+                // Set list
+                list = deserialize(json);
 
                 // Unlock the application
                 UnlockApplication();
-            } catch {
+            } catch (Exception e) {
                 // Inform user they've input an invalid key
-                new MessageDialog("Invalid API key").ShowAsync();
+                new MessageDialog("Error:\n" + e.Message).ShowAsync();
             }
+
+            // Deserialize json and update the dashboard
+            UpdateDashboard(list);
+
+            // Set API key for use later
+            APIKey = key;
 
             // Updated dashboard page number
             dashboardPage = page;
@@ -136,10 +139,53 @@ namespace CryptoDashboard {
         }
 
         private void UpdateDashboard(List<Currency> currencies) {
-            Currencies.Children.Clear();
+            // Clear the dashboard
+            //Currencies.Children.Clear();
+            DashboardGrid.Children.Clear();
+            DashboardGrid.RowDefinitions.Clear();
 
-            foreach(Currency currency in currencies) {
-                Currencies.Children.Add(CreateElement(currency));
+            // Keep track of which row we're on
+            int count = 0;
+
+            // For each currency
+            foreach (Currency currency in currencies) {
+                // Add row to the grid
+                DashboardGrid.RowDefinitions.Add(new RowDefinition());
+
+                // Create main element
+                RelativePanel main = CreateElement(currency);
+                Grid.SetColumn(main, 0);
+                Grid.SetRow(main, count);
+
+                // Create 1d element
+                RelativePanel _1 = CreateElement1d(currency._1d.price_change);
+                Grid.SetColumn(_1, 1);
+                Grid.SetRow(_1, count);
+
+                // Create 30d element
+                RelativePanel _30 = CreateElement1d(currency._30d.price_change);
+                Grid.SetColumn(_30, 2);
+                Grid.SetRow(_30, count);
+
+                // Create 365d element
+                RelativePanel _365 = CreateElement1d(currency._365d.price_change);
+                Grid.SetColumn(_365, 3);
+                Grid.SetRow(_365, count);
+
+                // Create YTD element
+                RelativePanel _ytd = CreateElement1d(currency.ytd.price_change);
+                Grid.SetColumn(_ytd, 4);
+                Grid.SetRow(_ytd, count);
+
+                // Increment count
+                count++;
+
+                // Add content to the grid
+                DashboardGrid.Children.Add(main);
+                DashboardGrid.Children.Add(_1);
+                DashboardGrid.Children.Add(_30);
+                DashboardGrid.Children.Add(_365);
+                DashboardGrid.Children.Add(_ytd);
             }
         }
 
@@ -148,16 +194,18 @@ namespace CryptoDashboard {
             panel.Margin = new Thickness(10);
 
             // Check image source type
-            ImageSource source;
-            if (currency.logo_url.Substring(currency.logo_url.Length - 3) == "svg") {
-                source = new SvgImageSource(new Uri(currency.logo_url));
-            } else {
-                source = new BitmapImage(new Uri(currency.logo_url));
+            ImageSource source = null;
+            if (currency.logo_url != "") {
+                if (currency.logo_url.Substring(currency.logo_url.Length - 3) == "svg") {
+                    source = new SvgImageSource(new Uri(currency.logo_url));
+                } else {
+                    source = new BitmapImage(new Uri(currency.logo_url));
+                }
             }
 
             // Logo
             Image logo = new Image();
-            logo.Source = source;
+            if(source != null) logo.Source = source;
             logo.Width = 64;
             logo.Height = 64;
             logo.Margin = new Thickness(0, 0, 10, 0);
@@ -186,6 +234,30 @@ namespace CryptoDashboard {
             panel.Children.Add(price);
 
             // Return element
+            return panel;
+        }
+
+        // Create colored element from currency change
+        private RelativePanel CreateElement1d(string change) {
+            RelativePanel panel = new RelativePanel();
+            panel.Margin = new Thickness(10);
+            panel.HorizontalAlignment = HorizontalAlignment.Center;
+
+            // Change / movement
+            TextBlock txt = new TextBlock();
+            txt.Text = change;
+            txt.FontWeight = FontWeights.Bold;
+            txt.FontSize = 18;
+
+            // Change text color +green / -red
+            if (double.Parse(change) > 0) {
+                txt.Foreground = new SolidColorBrush(Colors.Green);
+            } else {
+                txt.Foreground = new SolidColorBrush(Colors.Red);
+            }
+
+            panel.Children.Add(txt);
+
             return panel;
         }
 

@@ -20,13 +20,15 @@ using Windows.UI.Xaml.Media.Imaging;
 using Windows.UI;
 using Windows.UI.Text;
 using System.Windows.Input;
+using Windows.Globalization.NumberFormatting;
 
 namespace CryptoDashboard {
-    public sealed partial class MainPage : Page {
-        //public event EventHandler CanExecuteChanged;
+    public sealed partial class MainPage : Page, ICommand {
+        public event EventHandler CanExecuteChanged;
         string APIKey;
         string currencyType = "CAD";
         int dashboardPage = 1;
+        Dictionary<string, PurchasedCoin> myCurrencies = new Dictionary<string, PurchasedCoin>();
 
         public MainPage() {
             this.InitializeComponent();
@@ -58,26 +60,26 @@ namespace CryptoDashboard {
         }
 
         // Request a response from the Nomic API
-        private async void request(string key, int page=1, int per_page=20) {
+        private async void request(string key, int page = 1, int per_page = 20) {
             // Create an HTTP client object
             HttpClient client = new HttpClient();
 
             // Nomic endpoint
             Uri uri = new Uri(
                 "https://api.nomics.com/v1/currencies/ticker?status=active&sort=rank&key=" + key +
-                "&convert=" + currencyType + 
-                "&page=" + page + 
+                "&convert=" + currencyType +
+                "&page=" + page +
                 "&per-page=" + per_page
             );
 
-            
+
 
             // Object that will receive data asynchronously
             HttpResponseMessage response;
             string json;
             List<Currency> list = new List<Currency>();
 
-            
+
 
             try {
                 // Get response
@@ -195,12 +197,8 @@ namespace CryptoDashboard {
                 Button buy = new Button();
                 buy.Content = "Buy " + currency.symbol;
                 buy.Margin = new Thickness(10, 0, 10, 0);
-                //try {
-                //    buy.Command = this;
-                //    buy.CommandParameter = currency;
-                //} catch (Exception e) {
-                //    Debug.WriteLine(e.Message);
-                //}
+                buy.Command = this;
+                buy.CommandParameter = currency;
                 Grid.SetColumn(buy, 5);
                 Grid.SetRow(buy, count);
 
@@ -221,19 +219,8 @@ namespace CryptoDashboard {
             RelativePanel panel = new RelativePanel();
             panel.Margin = new Thickness(10);
 
-            // Check image source type
-            ImageSource source = null;
-            if (currency.logo_url != "") {
-                if (currency.logo_url.Substring(currency.logo_url.Length - 3) == "svg") {
-                    source = new SvgImageSource(new Uri(currency.logo_url));
-                } else {
-                    source = new BitmapImage(new Uri(currency.logo_url));
-                }
-            }
-
             // Logo
-            Image logo = new Image();
-            if(source != null) logo.Source = source;
+            Image logo = ElementMaker.makeImage(currency.logo_url);
             logo.Width = 64;
             logo.Height = 64;
             logo.Margin = new Thickness(0, 0, 10, 0);
@@ -312,15 +299,21 @@ namespace CryptoDashboard {
 
         private void NextPage_Click(object sender, RoutedEventArgs e) {
             request(APIKey, ++dashboardPage);
+
+            // Scroll to top
+            DashboardScroll.ChangeView(0, 0, 1);
         }
 
         private void PrevPage_Click(object sender, RoutedEventArgs e) {
             if (dashboardPage > 1) {
                 request(APIKey, --dashboardPage);
+
+                // Scroll to top
+                DashboardScroll.ChangeView(0, 0, 1);
             }
         }
 
-        
+
 
         // Updated what kind of currency to use and refresh the dashboard
         private void ChangeCurrencyType_Click(object sender, RoutedEventArgs e) {
@@ -330,23 +323,122 @@ namespace CryptoDashboard {
             request(APIKey);
         }
 
-        private void ChangeCash(double amount) {
-            Cash.Text = "1";
+        // Change / update the value displayed as the users currency
+        private bool ChangeCash(double amount) {
+            //CurrencyFormatter formatter = new CurrencyFormatter("");
+            DecimalFormatter formatter = new DecimalFormatter();
+            formatter.IsGrouped = true;
+
+            double value = Math.Round((double.Parse(Cash.Text) + amount) * 100) / 100;
+
+            if (value < 0) {
+                new MessageDialog("Error:\nNot enough money").ShowAsync();
+                return false;
+            }
+
+            Cash.Text = formatter.Format(value);
+
+            return true;
         }
 
-        //// If buy button can execute (required for ICommand)
-        //public bool CanExecute(object parameter) {
-        //    return Cash != null;
-        //}
+        // Update my currency page with myCurrencies
+        private void UpdateMyCurrencies() {
+            MyCurrencyPageStackPanel.Children.Clear();
 
-        //// Purchase / add a currency to the list of my_currencies
-        //public void Execute(object parameter) {
-        //    Currency currency = (Currency)parameter;
+            foreach (PurchasedCoin coin in myCurrencies.Values) {
+                MyCurrencyPageStackPanel.Children.Add(coin.toElement());
+            }
+        }
 
-        //    Debug.WriteLine("BUY EXECUTE! -- " + currency.symbol);
+        // If buy button can execute (required for ICommand)
+        public bool CanExecute(object parameter) {
+            return Cash != null;
+        }
 
-        //    // Use the price given, don't bother looking it up again to save dev time :P
-        //    ChangeCash(-currency.price);
-        //}
+        // Purchase / add a currency to the list of my_currencies
+        public void Execute(object parameter) {
+            Currency currency = (Currency)parameter;
+
+            Debug.WriteLine("BUY EXECUTE! -- " + currency.symbol);
+
+            // Use the price given, don't bother looking it up again to save dev time :P
+            if (ChangeCash(-currency.price)) {
+                if (myCurrencies.ContainsKey(currency.symbol)) {
+                    myCurrencies[currency.symbol].amount += 1;
+                } else {
+                    myCurrencies[currency.symbol] = new PurchasedCoin(currency, 1);
+                }
+
+                // Update currency page
+                UpdateMyCurrencies();
+            }
+        }
+    }
+
+    // Coin purchased from exchange of TOM; (I know their should be public getter/setters and private attributes.... time is of the essence!
+    public class PurchasedCoin{
+        public Currency currency;
+        public double amount;
+
+        // Create a new purchased coin object
+        public PurchasedCoin(Currency currency, double amount) {
+            this.currency = currency;
+            this.amount = amount;
+        }
+
+        // Create an element to display the purchased coin
+        public RelativePanel toElement() {
+            RelativePanel panel = new RelativePanel();
+
+            // logo
+            Image logo = ElementMaker.makeImage(currency.logo_url);
+
+            // symbol
+            TextBlock symbol = new TextBlock();
+            symbol.Text = currency.symbol;
+            RelativePanel.SetRightOf(symbol, logo);
+
+            // amount
+            TextBlock amt = new TextBlock();
+            amt.Text = "x" + amount;
+            RelativePanel.SetBelow(amt, symbol);
+            RelativePanel.SetRightOf(amt, logo);
+
+            // Add stuff to the panel
+            panel.Children.Add(logo);
+            panel.Children.Add(symbol);
+            panel.Children.Add(amt);
+
+            return panel;
+        }
+    }
+
+    // Element maker for all the generated elements
+    public class ElementMaker {
+
+        // Get buffer or svg image and return it
+        public static Image makeImage(string url) {
+            ImageSource source = null;
+
+            // check if url is empty
+            if (url != "") {
+                // check if url is svg
+                if (url.Substring(url.Length - 3) == "svg") {
+                    source = new SvgImageSource(new Uri(url));
+                } else {
+                    // normal image
+                    source = new BitmapImage(new Uri(url));
+                }
+            }
+
+            // Logo
+            Image img = new Image();
+            if (source != null) img.Source = source;
+            img.Margin = new Thickness(0, 0, 10, 0);
+            img.Width = 64;
+            img.Height = 64;
+
+            return img;
+        }
     }
 }

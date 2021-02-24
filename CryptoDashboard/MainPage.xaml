@@ -113,7 +113,7 @@
 
                     <!-- Dashboard -->
                     <Page Name="Dashboard" Visibility="Collapsed">
-                        <ScrollViewer>
+                        <ScrollViewer x:Name="DashboardScroll">
                             <StackPanel Name="DashboardContent">
                                 <!-- Top bar -->
                                 <Grid>
@@ -159,7 +159,9 @@
                     
                     <!-- Profile page / my currencies -->
                     <Page Name="MyCurrencyPage" Visibility="Collapsed">
-                        <TextBlock Text="mycurrencies" />
+                        <ScrollViewer>
+                            <StackPanel x:Name="MyCurrencyPageStackPanel" />
+                        </ScrollViewer>
                     </Page>
                 </Grid>
             </SplitView.Content>

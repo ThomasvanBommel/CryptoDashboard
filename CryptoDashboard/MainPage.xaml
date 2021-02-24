@@ -40,7 +40,15 @@
             
             <!-- Hamburger button + title bar -->
             <Button Name="HamburgerButton" Grid.Column="0" Width="{ StaticResource NavCloseWidth }" Padding="0, 10" Foreground="White" FontFamily="{ StaticResource IconFontFamily }" FontSize="{ StaticResource NavFontSize }" Content="&#xE700;" Click="HamburgerButton_Click" />
-            <TextBlock Name="Title" Foreground="White" Grid.Column="1" Padding="10" />
+            
+            <!-- Currency type (ie. CAD, USD, etc...) -->
+            <RelativePanel x:Name="CashInfo" Grid.Column="1" Visibility="Collapsed">
+                <TextBox x:Name="Cash" FontWeight="Bold" Grid.Column="1" Padding="8" Text="1,000,000" />
+                <TextBox x:Name="CurrencyType" Text="CAD" RelativePanel.RightOf="Cash" Padding="8" />
+                <Button Content="Change" RelativePanel.RightOf="CurrencyType" Margin="3,3,0,0" Click="ChangeCurrencyType_Click" />
+            </RelativePanel>
+
+            <!-- Filler -->
             <TextBlock HorizontalAlignment="Stretch" Grid.Column="2" />
             
             <!-- Lock icon (top right) -->
@@ -71,24 +79,17 @@
 
                     <!-- Unlocked menu -->
                     <ListBox Name="DashboardMenu" Visibility="Collapsed" SelectionChanged="DashboardChanged">
-                        <ListBoxItem Name="OpenFile">
+                        <ListBoxItem Name="Browse" IsSelected="True">
                             <StackPanel Orientation="Horizontal">
-                                <TextBlock FontFamily="{ StaticResource IconFontFamily }" FontSize="{ StaticResource NavFontSize }" Width="{ StaticResource NavCloseWidth }" Text="&#xE8E5;" TextAlignment="Center" Margin="{ StaticResource IconMargin }" />
-                                <TextBlock Text="Open File" FontSize="{ StaticResource NavFontSize }" Margin="{ StaticResource HamburgerOptionMargin }" />
+                                <TextBlock FontFamily="{ StaticResource IconFontFamily }" FontSize="{ StaticResource NavFontSize }" Width="{ StaticResource NavCloseWidth }" Text="&#xF78B;" TextAlignment="Center" Margin="{ StaticResource IconMargin }" />
+                                <TextBlock Text="Browse" FontSize="{ StaticResource NavFontSize }" Margin="{ StaticResource HamburgerOptionMargin }" />
                             </StackPanel>
                         </ListBoxItem>
 
-                        <ListBoxItem Name="OpenDir">
+                        <ListBoxItem Name="MyCurrencies">
                             <StackPanel Orientation="Horizontal">
-                                <TextBlock FontFamily="{ StaticResource IconFontFamily }" FontSize="{ StaticResource NavFontSize }" Width="{ StaticResource NavCloseWidth }" Text="&#xE8DA;" TextAlignment="Center" Margin="{ StaticResource IconMargin }" />
-                                <TextBlock Text="Open Directory" FontSize="{ StaticResource NavFontSize }" Margin="{ StaticResource HamburgerOptionMargin }" />
-                            </StackPanel>
-                        </ListBoxItem>
-
-                        <ListBoxItem Name="Author">
-                            <StackPanel Orientation="Horizontal">
-                                <TextBlock FontFamily="{ StaticResource IconFontFamily }" FontSize="{ StaticResource NavFontSize }" Width="{ StaticResource NavCloseWidth }" Text="&#xE779;" TextAlignment="Center" Margin="{ StaticResource IconMargin }" />
-                                <TextBlock Text="View Author Details" FontSize="{ StaticResource NavFontSize }" Margin="{ StaticResource HamburgerOptionMargin }" />
+                                <TextBlock FontFamily="{ StaticResource IconFontFamily }" FontSize="{ StaticResource NavFontSize }" Width="{ StaticResource NavCloseWidth }" Text="&#xE838;" TextAlignment="Center" Margin="{ StaticResource IconMargin }" />
+                                <TextBlock Text="My Currencies" FontSize="{ StaticResource NavFontSize }" Margin="{ StaticResource HamburgerOptionMargin }" />
                             </StackPanel>
                         </ListBoxItem>
                     </ListBox>
@@ -99,6 +100,7 @@
             <!-- Main content -->
             <SplitView.Content>
                 <Grid>
+                    <!-- Lockscreen -->
                     <Page Name="UnlockPage">
                         <StackPanel>
                             <TextBlock HorizontalAlignment="Center" Margin="15">Locked content, enter API key to unlock.</TextBlock>
@@ -121,6 +123,7 @@
                                         <ColumnDefinition Width="*" />
                                         <ColumnDefinition Width="*" />
                                         <ColumnDefinition Width="*" />
+                                        <ColumnDefinition Width="Auto" />
                                     </Grid.ColumnDefinitions>
 
                                     <TextBlock Text="Currency" HorizontalAlignment="Center" Grid.Column="0" />
@@ -128,6 +131,7 @@
                                     <TextBlock Text="30 Day"   HorizontalAlignment="Center" Grid.Column="2" />
                                     <TextBlock Text="365 Day"  HorizontalAlignment="Center" Grid.Column="3" />
                                     <TextBlock Text="YTD"      HorizontalAlignment="Center" Grid.Column="4" />
+                                    <TextBlock Text="Buy" HorizontalAlignment="Center" Grid.Column="5" Padding="35,0,50,0" />
                                 </Grid>
                                 
                                 
@@ -139,6 +143,7 @@
                                         <ColumnDefinition Width="*" />
                                         <ColumnDefinition Width="*" />
                                         <ColumnDefinition Width="*" />
+                                        <ColumnDefinition Width="Auto" />
                                     </Grid.ColumnDefinitions>
                                 </Grid>
                                 
@@ -150,6 +155,11 @@
                                 </RelativePanel>
                             </StackPanel>
                         </ScrollViewer>
+                    </Page>
+                    
+                    <!-- Profile page / my currencies -->
+                    <Page Name="MyCurrencyPage" Visibility="Collapsed">
+                        <TextBlock Text="mycurrencies" />
                     </Page>
                 </Grid>
             </SplitView.Content>

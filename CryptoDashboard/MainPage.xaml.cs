@@ -19,10 +19,13 @@ using Newtonsoft.Json;
 using Windows.UI.Xaml.Media.Imaging;
 using Windows.UI;
 using Windows.UI.Text;
+using System.Windows.Input;
 
 namespace CryptoDashboard {
     public sealed partial class MainPage : Page {
+        //public event EventHandler CanExecuteChanged;
         string APIKey;
+        string currencyType = "CAD";
         int dashboardPage = 1;
 
         public MainPage() {
@@ -61,15 +64,20 @@ namespace CryptoDashboard {
 
             // Nomic endpoint
             Uri uri = new Uri(
-                "https://api.nomics.com/v1/currencies/ticker?convert=CAD&status=active&sort=rank&key=" + key +
+                "https://api.nomics.com/v1/currencies/ticker?status=active&sort=rank&key=" + key +
+                "&convert=" + currencyType + 
                 "&page=" + page + 
                 "&per-page=" + per_page
             );
+
+            
 
             // Object that will receive data asynchronously
             HttpResponseMessage response;
             string json;
             List<Currency> list = new List<Currency>();
+
+            
 
             try {
                 // Get response
@@ -116,6 +124,9 @@ namespace CryptoDashboard {
 
             // Show "logout" button
             LockBtn.Visibility = Visibility.Visible;
+
+            // Show currency info (topbar)
+            CashInfo.Visibility = Visibility.Visible;
         }
 
         // Lock the application, hiding the dashboard and showing the lock screen
@@ -131,6 +142,9 @@ namespace CryptoDashboard {
 
             // Hide "logout" button
             LockBtn.Visibility = Visibility.Collapsed;
+
+            // Hide currency info (topbar)
+            CashInfo.Visibility = Visibility.Collapsed;
         }
 
         // Deserialize JSON to Currency[] object
@@ -177,6 +191,19 @@ namespace CryptoDashboard {
                 Grid.SetColumn(_ytd, 4);
                 Grid.SetRow(_ytd, count);
 
+                // Buy button
+                Button buy = new Button();
+                buy.Content = "Buy " + currency.symbol;
+                buy.Margin = new Thickness(10, 0, 10, 0);
+                //try {
+                //    buy.Command = this;
+                //    buy.CommandParameter = currency;
+                //} catch (Exception e) {
+                //    Debug.WriteLine(e.Message);
+                //}
+                Grid.SetColumn(buy, 5);
+                Grid.SetRow(buy, count);
+
                 // Increment count
                 count++;
 
@@ -186,6 +213,7 @@ namespace CryptoDashboard {
                 DashboardGrid.Children.Add(_30);
                 DashboardGrid.Children.Add(_365);
                 DashboardGrid.Children.Add(_ytd);
+                DashboardGrid.Children.Add(buy);
             }
         }
 
@@ -245,6 +273,7 @@ namespace CryptoDashboard {
 
             // Change / movement
             TextBlock txt = new TextBlock();
+            txt.Padding = new Thickness(0, 15, 0, 0);
             txt.Text = change;
             txt.FontWeight = FontWeights.Bold;
             txt.FontSize = 18;
@@ -261,8 +290,18 @@ namespace CryptoDashboard {
             return panel;
         }
 
+        // User has changed the dashboard option (sidebar)
         private void DashboardChanged(object sender, SelectionChangedEventArgs e) {
+            if (Dashboard != null && MyCurrencyPage != null) {
+                if (Browse.IsSelected) {
+                    MyCurrencyPage.Visibility = Visibility.Collapsed;
+                    Dashboard.Visibility = Visibility.Visible;
 
+                } else if (MyCurrencies.IsSelected) {
+                    Dashboard.Visibility = Visibility.Collapsed;
+                    MyCurrencyPage.Visibility = Visibility.Visible;
+                }
+            }
         }
 
         // User clicked the "lock application" button
@@ -280,5 +319,34 @@ namespace CryptoDashboard {
                 request(APIKey, --dashboardPage);
             }
         }
+
+        
+
+        // Updated what kind of currency to use and refresh the dashboard
+        private void ChangeCurrencyType_Click(object sender, RoutedEventArgs e) {
+            currencyType = CurrencyType.Text;
+
+            // update dashboard
+            request(APIKey);
+        }
+
+        private void ChangeCash(double amount) {
+            Cash.Text = "1";
+        }
+
+        //// If buy button can execute (required for ICommand)
+        //public bool CanExecute(object parameter) {
+        //    return Cash != null;
+        //}
+
+        //// Purchase / add a currency to the list of my_currencies
+        //public void Execute(object parameter) {
+        //    Currency currency = (Currency)parameter;
+
+        //    Debug.WriteLine("BUY EXECUTE! -- " + currency.symbol);
+
+        //    // Use the price given, don't bother looking it up again to save dev time :P
+        //    ChangeCash(-currency.price);
+        //}
     }
 }

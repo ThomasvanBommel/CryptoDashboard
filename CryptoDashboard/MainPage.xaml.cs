@@ -18,13 +18,15 @@ using System.Diagnostics;
 using Newtonsoft.Json;
 using Windows.UI.Xaml.Media.Imaging;
 using Windows.UI;
+using Windows.UI.Xaml.Controls;
 using Windows.UI.Text;
 using System.Windows.Input;
 using Windows.Globalization.NumberFormatting;
+using Microsoft.UI.Xaml.Controls;
 
 namespace CryptoDashboard {
-    public sealed partial class MainPage : Page, ICommand {
-        public event EventHandler CanExecuteChanged;
+    public sealed partial class MainPage : Page {
+        //public event EventHandler CanExecuteChanged;
         string APIKey;
         string currencyType = "CAD";
         int dashboardPage = 1;
@@ -34,6 +36,7 @@ namespace CryptoDashboard {
             this.InitializeComponent();
         }
 
+        // Clicked the hamburger icon!
         private void HamburgerButton_Click(object sender, RoutedEventArgs e) {
             MySplitView.IsPaneOpen = !MySplitView.IsPaneOpen;
         }
@@ -72,14 +75,10 @@ namespace CryptoDashboard {
                 "&per-page=" + per_page
             );
 
-
-
             // Object that will receive data asynchronously
             HttpResponseMessage response;
             string json;
             List<Currency> list = new List<Currency>();
-
-
 
             try {
                 // Get response
@@ -154,6 +153,7 @@ namespace CryptoDashboard {
             return JsonConvert.DeserializeObject<List<Currency>>(json);
         }
 
+        // Update dashboard currencies
         private void UpdateDashboard(List<Currency> currencies) {
             // Clear the dashboard
             //Currencies.Children.Clear();
@@ -168,39 +168,94 @@ namespace CryptoDashboard {
                 // Add row to the grid
                 DashboardGrid.RowDefinitions.Add(new RowDefinition());
 
+                // 0-5 offset
+                Thickness offset = new Thickness(0, 20, 0, 0);
+
                 // Create main element
                 RelativePanel main = CreateElement(currency);
+                main.Margin = offset;
                 Grid.SetColumn(main, 0);
                 Grid.SetRow(main, count);
 
                 // Create 1d element
                 RelativePanel _1 = CreateElement1d(currency._1d.price_change);
+                _1.Margin = offset;
                 Grid.SetColumn(_1, 1);
                 Grid.SetRow(_1, count);
 
                 // Create 30d element
                 RelativePanel _30 = CreateElement1d(currency._30d.price_change);
+                _30.Margin = offset;
                 Grid.SetColumn(_30, 2);
                 Grid.SetRow(_30, count);
 
                 // Create 365d element
                 RelativePanel _365 = CreateElement1d(currency._365d.price_change);
+                _365.Margin = offset;
                 Grid.SetColumn(_365, 3);
                 Grid.SetRow(_365, count);
 
                 // Create YTD element
                 RelativePanel _ytd = CreateElement1d(currency.ytd.price_change);
+                _ytd.Margin = offset;
                 Grid.SetColumn(_ytd, 4);
                 Grid.SetRow(_ytd, count);
+
+                // Buy stackpanel
+                StackPanel stackp = new StackPanel();
+                stackp.Margin = new Thickness(10);
+                Grid.SetColumn(stackp, 5);
+                Grid.SetRow(stackp, count);
+
+                // Calculated amount
+                TextBlock calced = new TextBlock();
+                calced.HorizontalAlignment = HorizontalAlignment.Center;
+                calced.Text = "0";
+                stackp.Children.Add(calced);
+
+                // Amount selector
+                NumberBox amount = new NumberBox();
+                amount.Value = 0;
+                amount.Minimum = 0;
+                amount.HorizontalAlignment = HorizontalAlignment.Stretch;
+                amount.SmallChange = 0.1;
+                amount.LargeChange = 1;
+                amount.SpinButtonPlacementMode = NumberBoxSpinButtonPlacementMode.Compact;
+                amount.ValueChanged += delegate (NumberBox sender, NumberBoxValueChangedEventArgs args){
+                    DecimalFormatter formatter = new DecimalFormatter();
+                    formatter.IsGrouped = true;
+
+                    // Add up value and round to 2 decimal places
+                    double value = Math.Round(amount.Value * currency.price * 100) / 100.0;
+
+                    // format value
+                    calced.Text = formatter.Format(value);
+                };
+                //amount.ValueChanged = Number
+                stackp.Children.Add(amount);
 
                 // Buy button
                 Button buy = new Button();
                 buy.Content = "Buy " + currency.symbol;
-                buy.Margin = new Thickness(10, 0, 10, 0);
-                buy.Command = this;
-                buy.CommandParameter = currency;
-                Grid.SetColumn(buy, 5);
-                Grid.SetRow(buy, count);
+                buy.HorizontalAlignment = HorizontalAlignment.Stretch;
+                buy.Click += delegate (object sender, RoutedEventArgs args) {
+                    Debug.WriteLine("BUY EXECUTE! -- " + currency.symbol);
+
+                    // Use the price given, don't bother looking it up again to save dev time :P
+                    if (ChangeCash(-currency.price * amount.Value)) {
+                        if (myCurrencies.ContainsKey(currency.symbol)) {
+                            myCurrencies[currency.symbol + currency.price].amount += amount.Value;
+                        } else {
+                            myCurrencies[currency.symbol + currency.price] = new PurchasedCoin(currency, amount.Value);
+                        }
+
+                        // Update currency page
+                        UpdateMyCurrencies();
+                    }
+                };
+                //buy.Command = this;
+                //buy.CommandParameter = currency;
+                stackp.Children.Add(buy);
 
                 // Increment count
                 count++;
@@ -211,10 +266,11 @@ namespace CryptoDashboard {
                 DashboardGrid.Children.Add(_30);
                 DashboardGrid.Children.Add(_365);
                 DashboardGrid.Children.Add(_ytd);
-                DashboardGrid.Children.Add(buy);
+                DashboardGrid.Children.Add(stackp);
             }
         }
 
+        // Create main element for currency
         private RelativePanel CreateElement(Currency currency) {
             RelativePanel panel = new RelativePanel();
             panel.Margin = new Thickness(10);
@@ -297,6 +353,7 @@ namespace CryptoDashboard {
             LockApplication();
         }
 
+        // Next dashboard page...
         private void NextPage_Click(object sender, RoutedEventArgs e) {
             request(APIKey, ++dashboardPage);
 
@@ -304,6 +361,7 @@ namespace CryptoDashboard {
             DashboardScroll.ChangeView(0, 0, 1);
         }
 
+        // Previous dashboard page...
         private void PrevPage_Click(object sender, RoutedEventArgs e) {
             if (dashboardPage > 1) {
                 request(APIKey, --dashboardPage);
@@ -350,29 +408,29 @@ namespace CryptoDashboard {
             }
         }
 
-        // If buy button can execute (required for ICommand)
-        public bool CanExecute(object parameter) {
-            return Cash != null;
-        }
+        //// If buy button can execute (required for ICommand)
+        //public bool CanExecute(object parameter) {
+        //    return Cash != null;
+        //}
 
-        // Purchase / add a currency to the list of my_currencies
-        public void Execute(object parameter) {
-            Currency currency = (Currency)parameter;
+        //// Purchase / add a currency to the list of my_currencies
+        //public void Execute(object parameter) {
+        //    Currency currency = (Currency)parameter;
 
-            Debug.WriteLine("BUY EXECUTE! -- " + currency.symbol);
+        //    Debug.WriteLine("BUY EXECUTE! -- " + currency.symbol);
 
-            // Use the price given, don't bother looking it up again to save dev time :P
-            if (ChangeCash(-currency.price)) {
-                if (myCurrencies.ContainsKey(currency.symbol)) {
-                    myCurrencies[currency.symbol].amount += 1;
-                } else {
-                    myCurrencies[currency.symbol] = new PurchasedCoin(currency, 1);
-                }
+        //    // Use the price given, don't bother looking it up again to save dev time :P
+        //    if (ChangeCash(-currency.price)) {
+        //        if (myCurrencies.ContainsKey(currency.symbol)) {
+        //            myCurrencies[currency.symbol].amount += 1;
+        //        } else {
+        //            myCurrencies[currency.symbol] = new PurchasedCoin(currency, 1);
+        //        }
 
-                // Update currency page
-                UpdateMyCurrencies();
-            }
-        }
+        //        // Update currency page
+        //        UpdateMyCurrencies();
+        //    }
+        //}
     }
 
     // Coin purchased from exchange of TOM; (I know their should be public getter/setters and private attributes.... time is of the essence!
@@ -389,6 +447,7 @@ namespace CryptoDashboard {
         // Create an element to display the purchased coin
         public RelativePanel toElement() {
             RelativePanel panel = new RelativePanel();
+            panel.Margin = new Thickness(10);
 
             // logo
             Image logo = ElementMaker.makeImage(currency.logo_url);
@@ -400,14 +459,21 @@ namespace CryptoDashboard {
 
             // amount
             TextBlock amt = new TextBlock();
-            amt.Text = "x" + amount;
+            amt.Text = "Amount: " + amount;
             RelativePanel.SetBelow(amt, symbol);
             RelativePanel.SetRightOf(amt, logo);
+
+            // purchase price
+            TextBlock price = new TextBlock();
+            price.Text = "Purchase Price: " + currency.price;
+            RelativePanel.SetBelow(price, amt);
+            RelativePanel.SetRightOf(price, logo);
 
             // Add stuff to the panel
             panel.Children.Add(logo);
             panel.Children.Add(symbol);
             panel.Children.Add(amt);
+            panel.Children.Add(price);
 
             return panel;
         }

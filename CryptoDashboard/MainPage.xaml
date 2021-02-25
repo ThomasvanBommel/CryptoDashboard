@@ -36,6 +36,7 @@
                 <ColumnDefinition Width="Auto" />
                 <ColumnDefinition Width="*" />
                 <ColumnDefinition Width="Auto" />
+                <ColumnDefinition Width="Auto" />
             </Grid.ColumnDefinitions>
             
             <!-- Hamburger button + title bar -->
@@ -50,9 +51,19 @@
 
             <!-- Filler -->
             <TextBlock HorizontalAlignment="Stretch" Grid.Column="2" />
-            
+
+            <!-- Refresh button -->
+            <Button Name="RefreshBtn" Click="RefreshBtn_Click" Grid.Column="3" Visibility="Collapsed" Foreground="White" FontFamily="{ StaticResource IconFontFamily }" Background="Transparent" FontSize="{ StaticResource NavFontSize }" Width="{ StaticResource NavCloseWidth }"  Margin="{ StaticResource IconMargin }" Content="&#xE72C;">
+                <Button.Resources>
+                    <SolidColorBrush x:Key="ButtonBackgroundPointerOver" Color="Transparent" />
+                    <SolidColorBrush x:Key="ButtonForegroundPointerOver" Color="Black" />
+                    <SolidColorBrush x:Key="ButtonBorderBrushPointerOver" Color="Transparent" />
+                    <SolidColorBrush x:Key="ButtonBorderBrushPressed" Color="Transparent" />
+                </Button.Resources>
+            </Button>
+
             <!-- Lock icon (top right) -->
-            <Button Name="LockBtn" Click="LockBtn_Click" Visibility="Collapsed" Foreground="White" FontFamily="{ StaticResource IconFontFamily }" Background="Transparent" Grid.Column="3" FontSize="{ StaticResource NavFontSize }" Width="{ StaticResource NavCloseWidth }"  Margin="{ StaticResource IconMargin }" Content="&#xE72E;">
+            <Button Name="LockBtn" Click="LockBtn_Click" Grid.Column="4" Visibility="Collapsed" Foreground="White" FontFamily="{ StaticResource IconFontFamily }" Background="Transparent" FontSize="{ StaticResource NavFontSize }" Width="{ StaticResource NavCloseWidth }"  Margin="{ StaticResource IconMargin }" Content="&#xE72E;">
                 <Button.Resources>
                     <SolidColorBrush x:Key="ButtonBackgroundPointerOver" Color="Transparent" />
                     <SolidColorBrush x:Key="ButtonForegroundPointerOver" Color="Black" />

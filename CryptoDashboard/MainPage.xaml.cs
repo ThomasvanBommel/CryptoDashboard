@@ -111,6 +111,9 @@ namespace CryptoDashboard {
 
             // Enable unlock button
             UnlockButton.IsEnabled = true;
+
+            // Enable the refresh button
+            RefreshBtn.IsEnabled = true;
         }
 
         // Unlock the application, hiding the lock screen and showing the dashboard
@@ -125,6 +128,7 @@ namespace CryptoDashboard {
 
             // Show "logout" button
             LockBtn.Visibility = Visibility.Visible;
+            RefreshBtn.Visibility = Visibility.Visible;
 
             // Show currency info (topbar)
             CashInfo.Visibility = Visibility.Visible;
@@ -143,6 +147,7 @@ namespace CryptoDashboard {
 
             // Hide "logout" button
             LockBtn.Visibility = Visibility.Collapsed;
+            RefreshBtn.Visibility = Visibility.Collapsed;
 
             // Hide currency info (topbar)
             CashInfo.Visibility = Visibility.Collapsed;
@@ -382,7 +387,7 @@ namespace CryptoDashboard {
         }
 
         // Change / update the value displayed as the users currency
-        private bool ChangeCash(double amount) {
+        public bool ChangeCash(double amount) {
             //CurrencyFormatter formatter = new CurrencyFormatter("");
             DecimalFormatter formatter = new DecimalFormatter();
             formatter.IsGrouped = true;
@@ -408,29 +413,11 @@ namespace CryptoDashboard {
             }
         }
 
-        //// If buy button can execute (required for ICommand)
-        //public bool CanExecute(object parameter) {
-        //    return Cash != null;
-        //}
-
-        //// Purchase / add a currency to the list of my_currencies
-        //public void Execute(object parameter) {
-        //    Currency currency = (Currency)parameter;
-
-        //    Debug.WriteLine("BUY EXECUTE! -- " + currency.symbol);
-
-        //    // Use the price given, don't bother looking it up again to save dev time :P
-        //    if (ChangeCash(-currency.price)) {
-        //        if (myCurrencies.ContainsKey(currency.symbol)) {
-        //            myCurrencies[currency.symbol].amount += 1;
-        //        } else {
-        //            myCurrencies[currency.symbol] = new PurchasedCoin(currency, 1);
-        //        }
-
-        //        // Update currency page
-        //        UpdateMyCurrencies();
-        //    }
-        //}
+        // User clicked the refresh button!
+        private void RefreshBtn_Click(object sender, RoutedEventArgs e) {
+            RefreshBtn.IsEnabled = false;
+            request(APIKey);
+        }
     }
 
     // Coin purchased from exchange of TOM; (I know their should be public getter/setters and private attributes.... time is of the essence!
@@ -447,7 +434,7 @@ namespace CryptoDashboard {
         // Create an element to display the purchased coin
         public RelativePanel toElement() {
             RelativePanel panel = new RelativePanel();
-            panel.Margin = new Thickness(10);
+            panel.Margin = new Thickness(10,20,10,10);
 
             // logo
             Image logo = ElementMaker.makeImage(currency.logo_url);
@@ -469,11 +456,69 @@ namespace CryptoDashboard {
             RelativePanel.SetBelow(price, amt);
             RelativePanel.SetRightOf(price, logo);
 
+            // Buy stackpanel
+            StackPanel stackp = new StackPanel();
+            stackp.Margin = new Thickness(200, -10, 0, 0);
+            RelativePanel.SetRightOf(stackp, symbol);
+            RelativePanel.SetAlignTopWithPanel(stackp, true);
+
+            // Calculated amount
+            TextBlock calced = new TextBlock();
+            calced.HorizontalAlignment = HorizontalAlignment.Center;
+            calced.Text = "0";
+            stackp.Children.Add(calced);
+
+            // Amount selector
+            NumberBox amtt = new NumberBox();
+            amtt.Value = 0;
+            amtt.Minimum = 0;
+            amtt.Maximum = amount;
+            amtt.HorizontalAlignment = HorizontalAlignment.Stretch;
+            amtt.SmallChange = 0.1;
+            amtt.LargeChange = 1;
+            amtt.SpinButtonPlacementMode = NumberBoxSpinButtonPlacementMode.Compact;
+            amtt.ValueChanged += delegate (NumberBox sender, NumberBoxValueChangedEventArgs args) {
+                DecimalFormatter formatter = new DecimalFormatter();
+                formatter.IsGrouped = true;
+
+                // Add up value and round to 2 decimal places
+                double value = Math.Round(amtt.Value * currency.price * 100) / 100.0;
+
+                // format value
+                calced.Text = formatter.Format(value);
+            };
+            //amount.ValueChanged = Number
+            stackp.Children.Add(amtt);
+
+            // Sell button
+            Button sell = new Button();
+            sell.Content = "Sell " + currency.symbol;
+            sell.HorizontalAlignment = HorizontalAlignment.Stretch;
+            sell.Click += delegate (object sender, RoutedEventArgs args) {
+                Debug.WriteLine("BUY EXECUTE! -- " + currency.symbol);
+
+                //// Use the price given, don't bother looking it up again to save dev time :P
+                //if (MainPage.ChangeCash(-currency.price * amtt.Value)) {
+                //    if (myCurrencies.ContainsKey(currency.symbol)) {
+                //        myCurrencies[currency.symbol + currency.price].amount += amount.Value;
+                //    } else {
+                //        myCurrencies[currency.symbol + currency.price] = new PurchasedCoin(currency, amount.Value);
+                //    }
+
+                //    // Update currency page
+                //    UpdateMyCurrencies();
+                //}
+            };
+            //buy.Command = this;
+            //buy.CommandParameter = currency;
+            stackp.Children.Add(sell);
+
             // Add stuff to the panel
             panel.Children.Add(logo);
             panel.Children.Add(symbol);
             panel.Children.Add(amt);
             panel.Children.Add(price);
+            panel.Children.Add(stackp);
 
             return panel;
         }

@@ -1,26 +1,14 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.IO;
-using System.Linq;
-using System.Runtime.InteropServices.WindowsRuntime;
-using Windows.Foundation;
-using Windows.Foundation.Collections;
 using Windows.UI.Xaml;
 using Windows.UI.Xaml.Controls;
-using Windows.UI.Xaml.Controls.Primitives;
-using Windows.UI.Xaml.Data;
-using Windows.UI.Xaml.Input;
 using Windows.UI.Xaml.Media;
-using Windows.UI.Xaml.Navigation;
 using Windows.Web.Http;
 using Windows.UI.Popups;
 using System.Diagnostics;
 using Newtonsoft.Json;
-using Windows.UI.Xaml.Media.Imaging;
 using Windows.UI;
-using Windows.UI.Xaml.Controls;
 using Windows.UI.Text;
-using System.Windows.Input;
 using Windows.Globalization.NumberFormatting;
 using Microsoft.UI.Xaml.Controls;
 
@@ -52,7 +40,7 @@ namespace CryptoDashboard {
             // Check if key is empty
             if (key != "") {
                 // Send request
-                request(key);
+                RequestNewDashboard(key);
             } else {
                 // User submitted empty key
                 new MessageDialog("Empty submission. Try again.").ShowAsync();
@@ -62,8 +50,8 @@ namespace CryptoDashboard {
             }
         }
 
-        // Request a response from the Nomic API
-        private async void request(string key, int page = 1, int per_page = 20) {
+        // Request a new / updated dashboard
+        private async void RequestNewDashboard(string key, int page = 1, int per_page = 20) {
             // Create an HTTP client object
             HttpClient client = new HttpClient();
 
@@ -98,6 +86,7 @@ namespace CryptoDashboard {
             } catch (Exception e) {
                 // Inform user they've input an invalid key
                 new MessageDialog("Error:\n" + e.Message).ShowAsync();
+                return;
             }
 
             // Deserialize json and update the dashboard
@@ -114,6 +103,11 @@ namespace CryptoDashboard {
 
             // Enable the refresh button
             RefreshBtn.IsEnabled = true;
+        }
+
+        // Deserialize JSON to Currency[] object
+        private List<Currency> deserialize(string json) {
+            return JsonConvert.DeserializeObject<List<Currency>>(json);
         }
 
         // Unlock the application, hiding the lock screen and showing the dashboard
@@ -153,15 +147,9 @@ namespace CryptoDashboard {
             CashInfo.Visibility = Visibility.Collapsed;
         }
 
-        // Deserialize JSON to Currency[] object
-        private List<Currency> deserialize(string json) {
-            return JsonConvert.DeserializeObject<List<Currency>>(json);
-        }
-
         // Update dashboard currencies
         private void UpdateDashboard(List<Currency> currencies) {
             // Clear the dashboard
-            //Currencies.Children.Clear();
             DashboardGrid.Children.Clear();
             DashboardGrid.RowDefinitions.Clear();
 
@@ -206,61 +194,33 @@ namespace CryptoDashboard {
                 Grid.SetColumn(_ytd, 4);
                 Grid.SetRow(_ytd, count);
 
-                // Buy stackpanel
-                StackPanel stackp = new StackPanel();
-                stackp.Margin = new Thickness(10);
-                Grid.SetColumn(stackp, 5);
-                Grid.SetRow(stackp, count);
+                // NumberButtonPanel
+                NumberButtonPanel buyPanel = new NumberButtonPanel("Buy " + currency.symbol, currency);
+                buyPanel.Margin = new Thickness(10);
+                Grid.SetColumn(buyPanel, 5);
+                Grid.SetRow(buyPanel, count);
 
-                // Calculated amount
-                TextBlock calced = new TextBlock();
-                calced.HorizontalAlignment = HorizontalAlignment.Center;
-                calced.Text = "0";
-                stackp.Children.Add(calced);
+                // User clicks buy button
+                buyPanel.button.Click += delegate (object sender, RoutedEventArgs args) {
 
-                // Amount selector
-                NumberBox amount = new NumberBox();
-                amount.Value = 0;
-                amount.Minimum = 0;
-                amount.HorizontalAlignment = HorizontalAlignment.Stretch;
-                amount.SmallChange = 0.1;
-                amount.LargeChange = 1;
-                amount.SpinButtonPlacementMode = NumberBoxSpinButtonPlacementMode.Compact;
-                amount.ValueChanged += delegate (NumberBox sender, NumberBoxValueChangedEventArgs args){
-                    DecimalFormatter formatter = new DecimalFormatter();
-                    formatter.IsGrouped = true;
+                    // Check if user has enough money
+                    if (ChangeCash(-buyPanel.getAmountPrice())) {
 
-                    // Add up value and round to 2 decimal places
-                    double value = Math.Round(amount.Value * currency.price * 100) / 100.0;
-
-                    // format value
-                    calced.Text = formatter.Format(value);
-                };
-                //amount.ValueChanged = Number
-                stackp.Children.Add(amount);
-
-                // Buy button
-                Button buy = new Button();
-                buy.Content = "Buy " + currency.symbol;
-                buy.HorizontalAlignment = HorizontalAlignment.Stretch;
-                buy.Click += delegate (object sender, RoutedEventArgs args) {
-                    Debug.WriteLine("BUY EXECUTE! -- " + currency.symbol);
-
-                    // Use the price given, don't bother looking it up again to save dev time :P
-                    if (ChangeCash(-currency.price * amount.Value)) {
+                        // Check if myCurrencies contains this coin at this price
                         if (myCurrencies.ContainsKey(currency.symbol)) {
-                            myCurrencies[currency.symbol + currency.price].amount += amount.Value;
+
+                            // If so add to it
+                            myCurrencies[currency.symbol + currency.price].amount += buyPanel.amount.Value;
                         } else {
-                            myCurrencies[currency.symbol + currency.price] = new PurchasedCoin(currency, amount.Value);
+
+                            // If not add a new entry
+                            myCurrencies[currency.symbol + currency.price] = new PurchasedCoin(currency, buyPanel.amount.Value);
                         }
 
                         // Update currency page
                         UpdateMyCurrencies();
                     }
                 };
-                //buy.Command = this;
-                //buy.CommandParameter = currency;
-                stackp.Children.Add(buy);
 
                 // Increment count
                 count++;
@@ -271,7 +231,7 @@ namespace CryptoDashboard {
                 DashboardGrid.Children.Add(_30);
                 DashboardGrid.Children.Add(_365);
                 DashboardGrid.Children.Add(_ytd);
-                DashboardGrid.Children.Add(stackp);
+                DashboardGrid.Children.Add(buyPanel);
             }
         }
 
@@ -281,7 +241,7 @@ namespace CryptoDashboard {
             panel.Margin = new Thickness(10);
 
             // Logo
-            Image logo = ElementMaker.makeImage(currency.logo_url);
+            Image logo = ElementMaker.MakeImage(currency.logo_url);
             logo.Width = 64;
             logo.Height = 64;
             logo.Margin = new Thickness(0, 0, 10, 0);
@@ -360,7 +320,7 @@ namespace CryptoDashboard {
 
         // Next dashboard page...
         private void NextPage_Click(object sender, RoutedEventArgs e) {
-            request(APIKey, ++dashboardPage);
+            RequestNewDashboard(APIKey, ++dashboardPage);
 
             // Scroll to top
             DashboardScroll.ChangeView(0, 0, 1);
@@ -369,7 +329,7 @@ namespace CryptoDashboard {
         // Previous dashboard page...
         private void PrevPage_Click(object sender, RoutedEventArgs e) {
             if (dashboardPage > 1) {
-                request(APIKey, --dashboardPage);
+                RequestNewDashboard(APIKey, --dashboardPage);
 
                 // Scroll to top
                 DashboardScroll.ChangeView(0, 0, 1);
@@ -383,7 +343,7 @@ namespace CryptoDashboard {
             currencyType = CurrencyType.Text;
 
             // update dashboard
-            request(APIKey);
+            RequestNewDashboard(APIKey);
         }
 
         // Change / update the value displayed as the users currency
@@ -416,7 +376,7 @@ namespace CryptoDashboard {
         // User clicked the refresh button!
         private void RefreshBtn_Click(object sender, RoutedEventArgs e) {
             RefreshBtn.IsEnabled = false;
-            request(APIKey);
+            RequestNewDashboard(APIKey);
         }
     }
 
@@ -437,7 +397,7 @@ namespace CryptoDashboard {
             panel.Margin = new Thickness(10,20,10,10);
 
             // logo
-            Image logo = ElementMaker.makeImage(currency.logo_url);
+            Image logo = ElementMaker.MakeImage(currency.logo_url);
 
             // symbol
             TextBlock symbol = new TextBlock();
@@ -524,32 +484,26 @@ namespace CryptoDashboard {
         }
     }
 
-    // Element maker for all the generated elements
-    public class ElementMaker {
+    
 
-        // Get buffer or svg image and return it
-        public static Image makeImage(string url) {
-            ImageSource source = null;
+    
 
-            // check if url is empty
-            if (url != "") {
-                // check if url is svg
-                if (url.Substring(url.Length - 3) == "svg") {
-                    source = new SvgImageSource(new Uri(url));
-                } else {
-                    // normal image
-                    source = new BitmapImage(new Uri(url));
-                }
-            }
+    
 
-            // Logo
-            Image img = new Image();
-            if (source != null) img.Source = source;
-            img.Margin = new Thickness(0, 0, 10, 0);
-            img.Width = 64;
-            img.Height = 64;
 
-            return img;
-        }
-    }
+//sell.Click += delegate (object sender, RoutedEventArgs args) {
+//    Debug.WriteLine("BUY EXECUTE! -- " + currency.symbol);
+
+//    //// Use the price given, don't bother looking it up again to save dev time :P
+//    //if (MainPage.ChangeCash(-currency.price * amtt.Value)) {
+//    //    if (myCurrencies.ContainsKey(currency.symbol)) {
+//    //        myCurrencies[currency.symbol + currency.price].amount += amount.Value;
+//    //    } else {
+//    //        myCurrencies[currency.symbol + currency.price] = new PurchasedCoin(currency, amount.Value);
+//    //    }
+
+//    //    // Update currency page
+//    //    UpdateMyCurrencies();
+//    //}
+//};
 }

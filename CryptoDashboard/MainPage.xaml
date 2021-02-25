@@ -171,7 +171,9 @@
                     <!-- Profile page / my currencies -->
                     <Page Name="MyCurrencyPage" Visibility="Collapsed">
                         <ScrollViewer>
-                            <StackPanel x:Name="MyCurrencyPageStackPanel" />
+                            <StackPanel x:Name="MyCurrencyPageStackPanel">
+                                <TextBlock HorizontalAlignment="Center" Text="Purchase some currency and it will show up here" />
+                            </StackPanel>
                         </ScrollViewer>
                     </Page>
                 </Grid>

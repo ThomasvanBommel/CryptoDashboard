@@ -161,12 +161,12 @@ namespace CryptoDashboard {
                 // Add row to the grid
                 DashboardGrid.RowDefinitions.Add(new RowDefinition());
 
-                // 0-5 offset
+                // Col 0-4 offset
                 Thickness offset = new Thickness(0, 20, 0, 0);
 
                 // Create main element
                 RelativePanel main = CreateElement(currency);
-                main.Margin = offset;
+                main.Margin = new Thickness(10, 20, 0, 0);
                 Grid.SetColumn(main, 0);
                 Grid.SetRow(main, count);
 
@@ -194,33 +194,10 @@ namespace CryptoDashboard {
                 Grid.SetColumn(_ytd, 4);
                 Grid.SetRow(_ytd, count);
 
-                // NumberButtonPanel
-                NumberButtonPanel buyPanel = new NumberButtonPanel("Buy " + currency.symbol, currency);
-                buyPanel.Margin = new Thickness(10);
+                // BuyAmountButtonPanelThingy
+                NumberButtonPanel buyPanel = BuyAmountButton(currency);
                 Grid.SetColumn(buyPanel, 5);
                 Grid.SetRow(buyPanel, count);
-
-                // User clicks buy button
-                buyPanel.button.Click += delegate (object sender, RoutedEventArgs args) {
-
-                    // Check if user has enough money
-                    if (ChangeCash(-buyPanel.getAmountPrice())) {
-
-                        // Check if myCurrencies contains this coin at this price
-                        if (myCurrencies.ContainsKey(currency.symbol)) {
-
-                            // If so add to it
-                            myCurrencies[currency.symbol + currency.price].amount += buyPanel.amount.Value;
-                        } else {
-
-                            // If not add a new entry
-                            myCurrencies[currency.symbol + currency.price] = new PurchasedCoin(currency, buyPanel.amount.Value);
-                        }
-
-                        // Update currency page
-                        UpdateMyCurrencies();
-                    }
-                };
 
                 // Increment count
                 count++;
@@ -233,6 +210,38 @@ namespace CryptoDashboard {
                 DashboardGrid.Children.Add(_ytd);
                 DashboardGrid.Children.Add(buyPanel);
             }
+        }
+
+        // Create a new buy amount button for a certain currency
+        private NumberButtonPanel BuyAmountButton(Currency currency) {
+            // NumberButtonPanel
+            NumberButtonPanel buyPanel = new NumberButtonPanel("Buy " + currency.symbol, currency);
+            buyPanel.Margin = new Thickness(10);
+
+            // User clicks buy button
+            buyPanel.button.Click += delegate (object sender, RoutedEventArgs args) {
+                if (buyPanel.amount.Value <= 0) return;
+
+                // Check if user has enough money
+                if (ChangeCash(-buyPanel.getAmountPrice())) {
+
+                    // Check if myCurrencies contains this coin at this price
+                    if (myCurrencies.ContainsKey(currency.symbol)) {
+
+                        // If so add to it
+                        myCurrencies[currency.symbol + currency.price].amount += buyPanel.amount.Value;
+                    } else {
+
+                        // If not add a new entry
+                        myCurrencies[currency.symbol + currency.price] = new PurchasedCoin(currency, buyPanel.amount.Value);
+                    }
+
+                    // Update currency page
+                    UpdateMyCurrencies();
+                }
+            };
+
+            return buyPanel;
         }
 
         // Create main element for currency
@@ -300,11 +309,16 @@ namespace CryptoDashboard {
 
         // User has changed the dashboard option (sidebar)
         private void DashboardChanged(object sender, SelectionChangedEventArgs e) {
+
+            // Ensure elements are valid / not null
             if (Dashboard != null && MyCurrencyPage != null) {
+                
+                // Dashboard selected
                 if (Browse.IsSelected) {
                     MyCurrencyPage.Visibility = Visibility.Collapsed;
                     Dashboard.Visibility = Visibility.Visible;
 
+                // myCurrencies selected
                 } else if (MyCurrencies.IsSelected) {
                     Dashboard.Visibility = Visibility.Collapsed;
                     MyCurrencyPage.Visibility = Visibility.Visible;
@@ -336,8 +350,6 @@ namespace CryptoDashboard {
             }
         }
 
-
-
         // Updated what kind of currency to use and refresh the dashboard
         private void ChangeCurrencyType_Click(object sender, RoutedEventArgs e) {
             currencyType = CurrencyType.Text;
@@ -348,18 +360,16 @@ namespace CryptoDashboard {
 
         // Change / update the value displayed as the users currency
         public bool ChangeCash(double amount) {
-            //CurrencyFormatter formatter = new CurrencyFormatter("");
-            DecimalFormatter formatter = new DecimalFormatter();
-            formatter.IsGrouped = true;
+            double value = double.Parse(Cash.Text) + amount;
 
-            double value = Math.Round((double.Parse(Cash.Text) + amount) * 100) / 100;
-
+            // Check if user has enough money
             if (value < 0) {
                 new MessageDialog("Error:\nNot enough money").ShowAsync();
                 return false;
             }
 
-            Cash.Text = formatter.Format(value);
+            // Format and set cash
+            Cash.Text = Formatter.FormatGroupedDecimalAndRound(value);
 
             return true;
         }
@@ -368,8 +378,9 @@ namespace CryptoDashboard {
         private void UpdateMyCurrencies() {
             MyCurrencyPageStackPanel.Children.Clear();
 
+            // Foreach coin in our collection, make an elements and append it to myCurrencies
             foreach (PurchasedCoin coin in myCurrencies.Values) {
-                MyCurrencyPageStackPanel.Children.Add(coin.toElement());
+                MyCurrencyPageStackPanel.Children.Add(MyCurrencyElement(coin));
             }
         }
 
@@ -378,132 +389,57 @@ namespace CryptoDashboard {
             RefreshBtn.IsEnabled = false;
             RequestNewDashboard(APIKey);
         }
-    }
 
-    // Coin purchased from exchange of TOM; (I know their should be public getter/setters and private attributes.... time is of the essence!
-    public class PurchasedCoin{
-        public Currency currency;
-        public double amount;
-
-        // Create a new purchased coin object
-        public PurchasedCoin(Currency currency, double amount) {
-            this.currency = currency;
-            this.amount = amount;
-        }
-
-        // Create an element to display the purchased coin
-        public RelativePanel toElement() {
+        // Create a new myCurrency element
+        public RelativePanel MyCurrencyElement(PurchasedCoin coin) {
             RelativePanel panel = new RelativePanel();
-            panel.Margin = new Thickness(10,20,10,10);
+            panel.Margin = new Thickness(10);
 
-            // logo
+            Currency currency = coin.currency;
+
+            // Logo
             Image logo = ElementMaker.MakeImage(currency.logo_url);
+            logo.Margin = new Thickness(0, 10, 0, 0);
 
-            // symbol
+            // Symbol
             TextBlock symbol = new TextBlock();
             symbol.Text = currency.symbol;
+            symbol.Margin = new Thickness(10, 10, 0, 0);
             RelativePanel.SetRightOf(symbol, logo);
 
-            // amount
-            TextBlock amt = new TextBlock();
-            amt.Text = "Amount: " + amount;
-            RelativePanel.SetBelow(amt, symbol);
-            RelativePanel.SetRightOf(amt, logo);
+            // Amount
+            TextBlock amount = new TextBlock();
+            amount.Text = "Amount: " + coin.amount;
+            amount.Margin = new Thickness(10, 0, 0, 0);
+            RelativePanel.SetBelow(amount, symbol);
+            RelativePanel.SetRightOf(amount, logo);
 
-            // purchase price
-            TextBlock price = new TextBlock();
-            price.Text = "Purchase Price: " + currency.price;
-            RelativePanel.SetBelow(price, amt);
-            RelativePanel.SetRightOf(price, logo);
+            // Purchase price
+            TextBlock purchased_price = new TextBlock();
+            purchased_price.Margin = new Thickness(10, 0, 0, 0);
+            purchased_price.Text = "Purchase Price: " + Formatter.FormatGroupedDecimalAndRound(currency.price);
+            RelativePanel.SetBelow(purchased_price, amount);
+            RelativePanel.SetRightOf(purchased_price, logo);
 
-            // Buy stackpanel
-            StackPanel stackp = new StackPanel();
-            stackp.Margin = new Thickness(200, -10, 0, 0);
-            RelativePanel.SetRightOf(stackp, symbol);
-            RelativePanel.SetAlignTopWithPanel(stackp, true);
+            // Sell NumberButtonPanelThingy
+            NumberButtonPanel sellPanel = new NumberButtonPanel("Sell " + currency.symbol, currency);
+            sellPanel.amount.Maximum = coin.amount;
+            RelativePanel.SetAlignRightWithPanel(sellPanel, true);
 
-            // Calculated amount
-            TextBlock calced = new TextBlock();
-            calced.HorizontalAlignment = HorizontalAlignment.Center;
-            calced.Text = "0";
-            stackp.Children.Add(calced);
-
-            // Amount selector
-            NumberBox amtt = new NumberBox();
-            amtt.Value = 0;
-            amtt.Minimum = 0;
-            amtt.Maximum = amount;
-            amtt.HorizontalAlignment = HorizontalAlignment.Stretch;
-            amtt.SmallChange = 0.1;
-            amtt.LargeChange = 1;
-            amtt.SpinButtonPlacementMode = NumberBoxSpinButtonPlacementMode.Compact;
-            amtt.ValueChanged += delegate (NumberBox sender, NumberBoxValueChangedEventArgs args) {
-                DecimalFormatter formatter = new DecimalFormatter();
-                formatter.IsGrouped = true;
-
-                // Add up value and round to 2 decimal places
-                double value = Math.Round(amtt.Value * currency.price * 100) / 100.0;
-
-                // format value
-                calced.Text = formatter.Format(value);
+            sellPanel.button.Click += delegate (object sender, RoutedEventArgs args) {
+                // Goto nomic and get the current price
+                // Add price to cash
+                // Do other stuffs...
             };
-            //amount.ValueChanged = Number
-            stackp.Children.Add(amtt);
-
-            // Sell button
-            Button sell = new Button();
-            sell.Content = "Sell " + currency.symbol;
-            sell.HorizontalAlignment = HorizontalAlignment.Stretch;
-            sell.Click += delegate (object sender, RoutedEventArgs args) {
-                Debug.WriteLine("BUY EXECUTE! -- " + currency.symbol);
-
-                //// Use the price given, don't bother looking it up again to save dev time :P
-                //if (MainPage.ChangeCash(-currency.price * amtt.Value)) {
-                //    if (myCurrencies.ContainsKey(currency.symbol)) {
-                //        myCurrencies[currency.symbol + currency.price].amount += amount.Value;
-                //    } else {
-                //        myCurrencies[currency.symbol + currency.price] = new PurchasedCoin(currency, amount.Value);
-                //    }
-
-                //    // Update currency page
-                //    UpdateMyCurrencies();
-                //}
-            };
-            //buy.Command = this;
-            //buy.CommandParameter = currency;
-            stackp.Children.Add(sell);
 
             // Add stuff to the panel
             panel.Children.Add(logo);
             panel.Children.Add(symbol);
-            panel.Children.Add(amt);
-            panel.Children.Add(price);
-            panel.Children.Add(stackp);
+            panel.Children.Add(amount);
+            panel.Children.Add(purchased_price);
+            panel.Children.Add(sellPanel);
 
             return panel;
         }
     }
-
-    
-
-    
-
-    
-
-
-//sell.Click += delegate (object sender, RoutedEventArgs args) {
-//    Debug.WriteLine("BUY EXECUTE! -- " + currency.symbol);
-
-//    //// Use the price given, don't bother looking it up again to save dev time :P
-//    //if (MainPage.ChangeCash(-currency.price * amtt.Value)) {
-//    //    if (myCurrencies.ContainsKey(currency.symbol)) {
-//    //        myCurrencies[currency.symbol + currency.price].amount += amount.Value;
-//    //    } else {
-//    //        myCurrencies[currency.symbol + currency.price] = new PurchasedCoin(currency, amount.Value);
-//    //    }
-
-//    //    // Update currency page
-//    //    UpdateMyCurrencies();
-//    //}
-//};
 }

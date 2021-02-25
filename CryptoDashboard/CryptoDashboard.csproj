@@ -127,6 +127,7 @@
     <Compile Include="NomicClasses.cs" />
     <Compile Include="NumberButtonPanel.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="PurchasedCoin.cs" />
   </ItemGroup>
   <ItemGroup>
     <AppxManifest Include="Package.appxmanifest">

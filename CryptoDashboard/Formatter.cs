@@ -11,7 +11,7 @@ namespace CryptoDashboard {
         public static String FormatGroupedDecimalAndRound(double value) {
             formatter.IsGrouped = true;
 
-            return formatter.Format(Math.Round(value / 100) / 100.0);
+            return formatter.Format(Math.Round(value * 100) / 100.0);
         }
     }
 }

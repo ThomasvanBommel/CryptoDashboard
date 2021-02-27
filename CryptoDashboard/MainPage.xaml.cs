@@ -11,14 +11,17 @@ using Windows.UI;
 using Windows.UI.Text;
 using Windows.Globalization.NumberFormatting;
 using Microsoft.UI.Xaml.Controls;
+using System.Threading.Tasks;
 
 namespace CryptoDashboard {
     public sealed partial class MainPage : Page {
-        //public event EventHandler CanExecuteChanged;
         string APIKey;
         string currencyType = "CAD";
         int dashboardPage = 1;
         Dictionary<string, PurchasedCoin> myCurrencies = new Dictionary<string, PurchasedCoin>();
+        List<TextBlock> myCurrencyElements = new List<TextBlock>();
+
+        bool onMyCurrencies = false;
 
         public MainPage() {
             this.InitializeComponent();
@@ -39,8 +42,11 @@ namespace CryptoDashboard {
 
             // Check if key is empty
             if (key != "") {
+                // Set API key
+                APIKey = key;
+
                 // Send request
-                RequestNewDashboard(key);
+                RequestNewDashboard();
             } else {
                 // User submitted empty key
                 new MessageDialog("Empty submission. Try again.").ShowAsync();
@@ -50,50 +56,61 @@ namespace CryptoDashboard {
             }
         }
 
-        // Request a new / updated dashboard
-        private async void RequestNewDashboard(string key, int page = 1, int per_page = 20) {
+        // Request from the nomic API
+        private async Task<string> request(string target, Dictionary<string, string> args) {
             // Create an HTTP client object
             HttpClient client = new HttpClient();
 
+            string url = "https://api.nomics.com/v1" + target + "?key=" + APIKey + "&";
+
+            // Turn args into url params
+            foreach (KeyValuePair<string, string> arg in args) 
+                url += arg.Key + "=" + arg.Value + "&";
+
             // Nomic endpoint
-            Uri uri = new Uri(
-                "https://api.nomics.com/v1/currencies/ticker?status=active&sort=rank&key=" + key +
-                "&convert=" + currencyType +
-                "&page=" + page +
-                "&per-page=" + per_page
-            );
+            Uri uri = new Uri(url);
 
             // Object that will receive data asynchronously
-            HttpResponseMessage response;
-            string json;
-            List<Currency> list = new List<Currency>();
+            HttpResponseMessage message;
+            string response = "";
 
             try {
                 // Get response
-                response = await client.GetAsync(uri);
+                message = await client.GetAsync(uri);
 
                 // Ensure success
-                response.EnsureSuccessStatusCode();
+                message.EnsureSuccessStatusCode();
 
                 // Read data
-                json = await response.Content.ReadAsStringAsync();
-
-                // Set list
-                list = deserialize(json);
-
-                // Unlock the application
-                UnlockApplication();
+                response = await message.Content.ReadAsStringAsync();
             } catch (Exception e) {
+
                 // Inform user they've input an invalid key
                 new MessageDialog("Error:\n" + e.Message).ShowAsync();
-                return;
             }
+
+            return response;
+        }
+
+        // Request a new / updated dashboard
+        private async void RequestNewDashboard(int page = 1, int per_page = 20) {
+            Dictionary<string, string> args = new Dictionary<string, string>() {
+                { "convert", currencyType },
+                { "page", page.ToString() },
+                { "per-page", per_page.ToString() }
+            };
+
+            // Get json response
+            string json = await request("/currencies/ticker", args);
+
+            // Set list
+            List<Currency> list = deserialize(json);
+
+            // Unlock the application
+            UnlockApplication();
 
             // Deserialize json and update the dashboard
             UpdateDashboard(list);
-
-            // Set API key for use later
-            APIKey = key;
 
             // Updated dashboard page number
             dashboardPage = page;
@@ -226,7 +243,7 @@ namespace CryptoDashboard {
                 if (ChangeCash(-buyPanel.getAmountPrice())) {
 
                     // Check if myCurrencies contains this coin at this price
-                    if (myCurrencies.ContainsKey(currency.symbol)) {
+                    if (myCurrencies.ContainsKey(currency.symbol + currency.price)) {
 
                         // If so add to it
                         myCurrencies[currency.symbol + currency.price].amount += buyPanel.amount.Value;
@@ -312,7 +329,9 @@ namespace CryptoDashboard {
 
             // Ensure elements are valid / not null
             if (Dashboard != null && MyCurrencyPage != null) {
-                
+
+                onMyCurrencies = false;
+
                 // Dashboard selected
                 if (Browse.IsSelected) {
                     MyCurrencyPage.Visibility = Visibility.Collapsed;
@@ -322,8 +341,70 @@ namespace CryptoDashboard {
                 } else if (MyCurrencies.IsSelected) {
                     Dashboard.Visibility = Visibility.Collapsed;
                     MyCurrencyPage.Visibility = Visibility.Visible;
+
+                    // Update current price
+                    UpdateMyCurrencyPrices();
+
+                    onMyCurrencies = true;
                 }
             }
+        }
+
+        // Update the mycurrencies current price
+        private async void UpdateMyCurrencyPrices() {
+            if (myCurrencies.Count == 0) return;
+
+            // Hash set to hold unique values
+            HashSet<string> symbols = new HashSet<string>();
+
+            // Get all symbols from owned currencies (distinct / unique)
+            foreach(PurchasedCoin coin in myCurrencies.Values) {
+                symbols.Add(coin.currency.symbol);
+            }
+
+            // Request prices
+            string json = await request("/currencies/ticker", new Dictionary<string, string> {
+                { "ids", string.Join(",", symbols) },
+                { "convert", currencyType }
+            });
+
+            // Deserialize data
+            List<Currency> list = deserialize(json);
+
+            Debug.WriteLine(json);
+
+            // Update my currency current prices (bit of a hack :P)
+            foreach (TextBlock current_price in myCurrencyElements) {
+                Debug.WriteLine(current_price.AccessKey);
+
+                string[] key = current_price.AccessKey.Split(":");
+
+                if (key.Length == 2) {
+                    // Find currency in the list of currencies equal to the elements access key
+                    Currency currency = list.Find(x => x.id == key[0]);
+
+                    // If found set text to the price returned
+                    if (currency != null) {
+                        current_price.Text = Formatter.FormatGroupedDecimalAndRound(currency.price);
+
+                        try {
+                            // Parse old price
+                            double old_price = double.Parse(key[1]);
+
+                            // Change color of text element +=green -=red
+                            if (currency.price > old_price) {
+                                current_price.Foreground = new SolidColorBrush(Colors.Green);
+                            } else if (currency.price < old_price) {
+                                current_price.Foreground = new SolidColorBrush(Colors.Red);
+                            } else {
+                                current_price.Foreground = new SolidColorBrush(Colors.Black);
+                            }
+                        } catch { }
+                    }
+                }
+            }
+
+            RefreshBtn.IsEnabled = true;
         }
 
         // User clicked the "lock application" button
@@ -334,7 +415,7 @@ namespace CryptoDashboard {
 
         // Next dashboard page...
         private void NextPage_Click(object sender, RoutedEventArgs e) {
-            RequestNewDashboard(APIKey, ++dashboardPage);
+            RequestNewDashboard(++dashboardPage);
 
             // Scroll to top
             DashboardScroll.ChangeView(0, 0, 1);
@@ -343,7 +424,7 @@ namespace CryptoDashboard {
         // Previous dashboard page...
         private void PrevPage_Click(object sender, RoutedEventArgs e) {
             if (dashboardPage > 1) {
-                RequestNewDashboard(APIKey, --dashboardPage);
+                RequestNewDashboard(--dashboardPage);
 
                 // Scroll to top
                 DashboardScroll.ChangeView(0, 0, 1);
@@ -355,7 +436,7 @@ namespace CryptoDashboard {
             currencyType = CurrencyType.Text;
 
             // update dashboard
-            RequestNewDashboard(APIKey);
+            RequestNewDashboard();
         }
 
         // Change / update the value displayed as the users currency
@@ -377,6 +458,7 @@ namespace CryptoDashboard {
         // Update my currency page with myCurrencies
         private void UpdateMyCurrencies() {
             MyCurrencyPageStackPanel.Children.Clear();
+            myCurrencyElements.Clear();
 
             // Foreach coin in our collection, make an elements and append it to myCurrencies
             foreach (PurchasedCoin coin in myCurrencies.Values) {
@@ -387,7 +469,13 @@ namespace CryptoDashboard {
         // User clicked the refresh button!
         private void RefreshBtn_Click(object sender, RoutedEventArgs e) {
             RefreshBtn.IsEnabled = false;
-            RequestNewDashboard(APIKey);
+
+            if (onMyCurrencies) {
+                UpdateMyCurrencies();
+                UpdateMyCurrencyPrices();
+            } else {
+                RequestNewDashboard();
+            }
         }
 
         // Create a new myCurrency element
@@ -421,15 +509,58 @@ namespace CryptoDashboard {
             RelativePanel.SetBelow(purchased_price, amount);
             RelativePanel.SetRightOf(purchased_price, logo);
 
+            // Current prices element / panel / thingy
+            StackPanel dataPanel = new StackPanel();
+            dataPanel.Margin = new Thickness(160, 10, 0, 0);
+            RelativePanel.SetRightOf(dataPanel, symbol);
+
+            // Currencies current price
+            TextBlock current_price_txt = new TextBlock();
+            current_price_txt.Text = "Current Price:";
+            dataPanel.Children.Add(current_price_txt);
+
+            // Currencies current price
+            TextBlock current_price = new TextBlock();
+            current_price.Text = "Unknown";
+            current_price.AccessKey = currency.symbol + ":" + currency.price;
+            dataPanel.Children.Add(current_price);
+            myCurrencyElements.Add(current_price);
+
             // Sell NumberButtonPanelThingy
             NumberButtonPanel sellPanel = new NumberButtonPanel("Sell " + currency.symbol, currency);
             sellPanel.amount.Maximum = coin.amount;
             RelativePanel.SetAlignRightWithPanel(sellPanel, true);
 
+            // Update amount when changes (relative to the current price) ((NOT a very nice solution))
+            sellPanel.amount.ValueChanged += delegate (NumberBox sender, NumberBoxValueChangedEventArgs args) {
+                try {
+                    double price = double.Parse(current_price.Text);
+                    sellPanel.calculated_price.Text = Formatter.FormatGroupedDecimalAndRound(sellPanel.amount.Value * price);
+                } catch { }
+            };
+
+            // Sell button based on current price elements value
             sellPanel.button.Click += delegate (object sender, RoutedEventArgs args) {
-                // Goto nomic and get the current price
-                // Add price to cash
-                // Do other stuffs...
+                try {
+                    double price = double.Parse(current_price.Text);
+
+                    // Update cash money!
+                    ChangeCash(sellPanel.amount.Value * price);
+                } catch (Exception e) {
+                    throw e;
+                    return;
+                }
+
+                // Remove amount from mycurrencies
+                coin.amount -= sellPanel.amount.Value;
+
+                // Remove if amount == 0
+                if (coin.amount <= 0)
+                    myCurrencies.Remove(coin.currency.symbol + coin.currency.price);
+
+                // Update UI
+                UpdateMyCurrencies();
+                UpdateMyCurrencyPrices();
             };
 
             // Add stuff to the panel
@@ -438,6 +569,7 @@ namespace CryptoDashboard {
             panel.Children.Add(amount);
             panel.Children.Add(purchased_price);
             panel.Children.Add(sellPanel);
+            panel.Children.Add(dataPanel);
 
             return panel;
         }

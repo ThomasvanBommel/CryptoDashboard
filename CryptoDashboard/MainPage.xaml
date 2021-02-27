@@ -99,8 +99,8 @@
 
                         <ListBoxItem Name="MyCurrencies">
                             <StackPanel Orientation="Horizontal">
-                                <TextBlock FontFamily="{ StaticResource IconFontFamily }" FontSize="{ StaticResource NavFontSize }" Width="{ StaticResource NavCloseWidth }" Text="&#xE838;" TextAlignment="Center" Margin="{ StaticResource IconMargin }" />
-                                <TextBlock Text="My Currencies" FontSize="{ StaticResource NavFontSize }" Margin="{ StaticResource HamburgerOptionMargin }" />
+                                <TextBlock AccessKey="btc" FontFamily="{ StaticResource IconFontFamily }" FontSize="{ StaticResource NavFontSize }" Width="{ StaticResource NavCloseWidth }" Text="&#xE838;" TextAlignment="Center" Margin="{ StaticResource IconMargin }" />
+                                <TextBlock AccessKey="btc" Text="My Currencies" FontSize="{ StaticResource NavFontSize }" Margin="{ StaticResource HamburgerOptionMargin }" />
                             </StackPanel>
                         </ListBoxItem>
                     </ListBox>
